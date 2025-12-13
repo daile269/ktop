@@ -6,40 +6,40 @@ function App() {
   const [t2, setT2] = useState('');
   const [t3, setT3] = useState('');
   
-  const [tableData, setTableData] = useState([]);
-  const [t1Values, setT1Values] = useState(Array(8).fill('')); // 8 giá trị cho 8 hàng
+  const [tableData1, setTableData1] = useState([]); // Bảng Toa 1
+  const [tableData2, setTableData2] = useState([]); // Bảng Toa 2
+  const [t1Values, setT1Values] = useState(Array(8).fill('')); // Giá trị T1 cho Toa 1
+  const [t2Values, setT2Values] = useState(Array(8).fill('')); // Giá trị T2 cho Toa 2
 
-  // Thuật toán sinh bảng
-  const generateTable = () => {
+  // Thuật toán sinh bảng (dùng chung cho cả 2 toa)
+  const generateTableData = (tValues, toaName) => {
     const ROWS = 8;
     const COLS = 10;
     const table = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
     
-    console.log('=== GENERATE TABLE ===');
-    console.log('Giá trị T1 (mỗi hàng):', t1Values);
+    console.log(`\n=== GENERATE ${toaName} ===`);
+    console.log(`Giá trị ${toaName}:`, tValues);
     
     // Duyệt qua từng cột (trái sang phải)
     for (let col = 0; col < COLS; col++) {
       let y = 1; // Reset y về 1 khi bắt đầu cột mới
-      console.log(`\n--- Cột ${col}: Bắt đầu với y = 1 ---`);
       
       // Duyệt qua từng hàng trong cột (trên xuống dưới)
       for (let row = 0; row < ROWS; row++) {
         let currentY = y;
         
-        // Lấy giá trị T1 của hàng này (chỉ định cột nào là "cột đặc biệt" cho hàng này)
-        const t1ColumnForThisRow = t1Values[row] ? parseInt(t1Values[row]) : -1;
+        // Lấy giá trị T của hàng này
+        const tColumnForThisRow = tValues[row] ? parseInt(tValues[row]) : -1;
         
         // Xác định màu
         let color = 'white';
-        let shouldResetY = false; // Flag để reset y sau khi tô đỏ
+        let shouldResetY = false;
         
-        // Logic tô đỏ: Nếu cột hiện tại = T1 của hàng này
-        // Thì tô đỏ ô này (bất kể giá trị y)
-        if (col === t1ColumnForThisRow && t1ColumnForThisRow !== -1) {
+        // Logic tô đỏ: Nếu cột hiện tại = T của hàng này
+        if (col === tColumnForThisRow && tColumnForThisRow !== -1) {
           color = 'red';
-          shouldResetY = true; // Đánh dấu cần reset y
-          console.log(`Tô ĐỎ: Hàng ${row}, Cột ${col}, Giá trị: ${col}-${currentY}, T1[${row}]=${t1ColumnForThisRow} → Reset y về 1`);
+          shouldResetY = true;
+          console.log(`Tô ĐỎ ${toaName}: Hàng ${row}, Cột ${col}, Giá trị: ${col}-${currentY}`);
         }
         
         // Kiểm tra điều kiện tô màu tím (giá trị = 7 hoặc 8)
@@ -58,19 +58,28 @@ function App() {
         // Nếu vừa tô đỏ, reset y về 1
         if (shouldResetY) {
           y = 1;
-          console.log(`  → Y đã reset về 1`);
         }
         
         // Nếu y > 8 thì reset về 1
         if (y > 8) {
           y = 1;
-          console.log(`  → Y vượt 8, reset về 1`);
         }
       }
     }
     
-    console.log('Bảng đã gen:', table);
-    setTableData(table);
+    return table;
+  };
+
+  const generateTable = () => {
+    // Gen bảng cho Toa 1
+    const table1 = generateTableData(t1Values, 'TOA 1');
+    setTableData1(table1);
+    
+    // Gen bảng cho Toa 2
+    const table2 = generateTableData(t2Values, 'TOA 2');
+    setTableData2(table2);
+    
+    console.log('Hoàn tất gen 2 bảng!');
   };
 
   const handleGenerate = () => {
@@ -81,6 +90,12 @@ function App() {
     const newValues = [...t1Values];
     newValues[rowIndex] = value;
     setT1Values(newValues);
+  };
+
+  const handleT2ValueChange = (rowIndex, value) => {
+    const newValues = [...t2Values];
+    newValues[rowIndex] = value;
+    setT2Values(newValues);
   };
 
   return (
@@ -108,16 +123,16 @@ function App() {
                 <th rowSpan="2" className="header-main">Ngày tháng năm</th>
                 <th rowSpan="2" className="header-main">Ngày</th>
                 <th colSpan="2" className="header-group">Toa 1</th>
-                <th colSpan="2" className="header-group">Toa 2</th>
-                <th colSpan="2" className="header-group">Toa 3</th>
+                {/* <th colSpan="2" className="header-group">Toa 2</th>
+                <th colSpan="2" className="header-group">Toa 3</th> */}
               </tr>
               <tr>
                 <th className="header-sub">T1</th>
                 <th className="header-sub">T2</th>
-                <th className="header-sub">T1</th>
+                {/* <th className="header-sub">T1</th>
                 <th className="header-sub">T2</th>
                 <th className="header-sub">T1</th>
-                <th className="header-sub">T2</th>
+                <th className="header-sub">T2</th> */}
               </tr>
             </thead>
             <tbody>
@@ -133,11 +148,18 @@ function App() {
                       onChange={(e) => handleT1ValueChange(rowIndex, e.target.value)}
                     />
                   </td>
+                  <td>
+                    <input 
+                      type="text" 
+                      className="cell-input small" 
+                      value={t2Values[rowIndex] || ''}
+                      onChange={(e) => handleT2ValueChange(rowIndex, e.target.value)}
+                    />
+                  </td>
+                  {/* <td><input type="text" className="cell-input small" /></td>
                   <td><input type="text" className="cell-input small" /></td>
                   <td><input type="text" className="cell-input small" /></td>
-                  <td><input type="text" className="cell-input small" /></td>
-                  <td><input type="text" className="cell-input small" /></td>
-                  <td><input type="text" className="cell-input small" /></td>
+                  <td><input type="text" className="cell-input small" /></td> */}
                 </tr>
               ))}
             </tbody>
@@ -151,68 +173,112 @@ function App() {
 
       {/* Right Panel - Bảng dữ liệu chính */}
       <div className="right-panel">
-        <div className="data-grid-wrapper">
-          {tableData.length > 0 ? (
-            <table className="data-grid">
-              <thead>
-                <tr>
-                  <th colSpan="2" className="group-header">Thông số</th>
-                  <th colSpan="10" className="group-header">Tham số</th>
-                </tr>
-                <tr>
-                  <th className="col-header fixed">Tên</th>
-                  <th className="col-header fixed">Giá trị</th>
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                    <th key={num} className="col-header">{num}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {tableData.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    <td className="data-cell fixed"></td>
-                    <td className="data-cell fixed value-col">
-                      <input
-                        type="text"
-                        className="grid-input"
-                        value={t1Values[rowIndex]}
-                        onChange={(e) => handleT1ValueChange(rowIndex, e.target.value)}
-                      />
-                    </td>
-                    {row.map((cell, colIndex) => (
-                      <td
-                        key={colIndex}
-                        className={`data-cell ${cell.color}`}
-                      >
-                        {cell.value}
-                      </td>
+        <div className="toolbar">
+          <button className="toolbar-btn">Tính</button>
+        </div>
+        
+        <div className="tables-container">
+          {/* Bảng T1 */}
+          <div className="table-section">
+            <h4 className="table-title">T1</h4>
+            <div className="data-grid-wrapper">
+              {tableData1.length > 0 ? (
+                <table className="data-grid">
+                  <thead>
+                    <tr>
+                      <th colSpan="1" className="group-header">Thông số</th>
+                      <th colSpan="10" className="group-header">Tham số</th>
+                    </tr>
+                    <tr>
+                      {/* <th className="col-header fixed">Tên</th> */}
+                      <th className="col-header fixed">T1</th>
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                        <th key={num} className="col-header">{num}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableData1.map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {/* <td className="data-cell fixed"></td> */}
+                        <td className="data-cell fixed value-col">
+                          <input
+                            type="text"
+                            className="grid-input"
+                            value={t1Values[rowIndex]}
+                            onChange={(e) => handleT1ValueChange(rowIndex, e.target.value)}
+                          />
+                        </td>
+                        {row.map((cell, colIndex) => (
+                          <td
+                            key={colIndex}
+                            className={`data-cell ${cell.color}`}
+                          >
+                            {cell.value}
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <div className="empty-grid">
-              <table className="data-grid">
-                <thead>
-                  <tr>
-                    <th colSpan="2" className="group-header">Thông số</th>
-                    <th colSpan="10" className="group-header">Tham số</th>
-                  </tr>
-                  <tr>
-                    <th className="col-header fixed">Tên</th>
-                    <th className="col-header fixed">Giá trị</th>
-                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                      <th key={num} className="col-header">{num}</th>
-                    ))}
-                  </tr>
-                </thead>
-              </table>
-              <div className="empty-message">
-                Nhập giá trị T1 và nhấn "Tính" để hiển thị dữ liệu
-              </div>
+                  </tbody>
+                </table>
+              ) : (
+                <div className="empty-message">
+                  Nhập giá trị T1 và nhấn "Tính"
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Bảng T2 */}
+          <div className="table-section">
+            <h4 className="table-title">T2</h4>
+            <div className="data-grid-wrapper">
+              {tableData2.length > 0 ? (
+                <table className="data-grid">
+                  <thead>
+                    <tr>
+                      <th colSpan="1" className="group-header">Thông số</th>
+                      <th colSpan="10" className="group-header">Tham số</th>
+                    </tr>
+                    <tr>
+                      {/* <th className="col-header fixed">Tên</th> */}
+                      <th className="col-header fixed">T2</th>
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
+                        <th key={num} className="col-header">{num}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableData2.map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        {/* <td className="data-cell fixed"></td> */}
+                        <td className="data-cell fixed value-col">
+                          <input
+                            type="text"
+                            className="grid-input"
+                            value={t2Values[rowIndex]}
+                            onChange={(e) => handleT2ValueChange(rowIndex, e.target.value)}
+                          />
+                        </td>
+                        {row.map((cell, colIndex) => (
+                          <td
+                            key={colIndex}
+                            className={`data-cell ${cell.color}`}
+                          >
+                            {cell.value}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="empty-message">
+                  Nhập giá trị T2 và nhấn "Tính"
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
