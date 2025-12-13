@@ -1,0 +1,415 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background: #f5f5f5;
+  color: #333;
+  overflow: hidden;
+}
+
+/* ========== MAIN CONTAINER ========== */
+.app-container {
+  display: flex;
+  height: 100vh;
+  background: #ffffff;
+}
+
+/* ========== LEFT PANEL (Narrow) ========== */
+.left-panel {
+  width: 320px;
+  background: #fafafa;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.panel-header {
+  padding: 16px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.panel-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.panel-toolbar {
+  padding: 12px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  gap: 8px;
+}
+
+.toolbar-button {
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid #d0d0d0;
+  background: #ffffff;
+  color: #555;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.toolbar-button:hover {
+  background: #f5f5f5;
+  border-color: #b0b0b0;
+}
+
+.toolbar-button.primary {
+  background: #4a90e2;
+  color: white;
+  border-color: #4a90e2;
+}
+
+.toolbar-button.primary:hover {
+  background: #357abd;
+  border-color: #357abd;
+}
+
+.toolbar-button.icon-btn {
+  padding: 6px 10px;
+  font-size: 14px;
+}
+
+.toolbar-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.toolbar-input-group label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.toolbar-input {
+  width: 50px;
+  padding: 6px 8px;
+  font-size: 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 3px;
+  text-align: center;
+  outline: none;
+}
+
+.toolbar-input:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.drag-hint {
+  padding: 10px 20px;
+  font-size: 11px;
+  color: #999;
+  background: #f9f9f9;
+  border-bottom: 1px solid #e0e0e0;
+  font-style: italic;
+}
+
+.schedule-table-wrapper {
+  flex: 1;
+  overflow: auto;
+  background: #ffffff;
+}
+
+.schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.schedule-table th {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  padding: 8px 6px;
+  font-weight: 600;
+  color: #555;
+  text-align: center;
+}
+
+.schedule-table .header-main {
+  background: #ebebeb;
+  font-size: 11px;
+}
+
+.schedule-table .header-group {
+  background: #f0f0f0;
+  font-size: 11px;
+  color: #4a90e2;
+}
+
+.schedule-table .header-sub {
+  background: #f8f8f8;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.schedule-table td {
+  border: 1px solid #e0e0e0;
+  padding: 4px;
+  text-align: center;
+}
+
+.cell-input {
+  width: 100%;
+  border: none;
+  padding: 6px 8px;
+  font-size: 12px;
+  text-align: center;
+  background: transparent;
+  outline: none;
+}
+
+.cell-input:focus {
+  background: #f0f8ff;
+  outline: 1px solid #4a90e2;
+}
+
+.cell-input.small {
+  padding: 6px 4px;
+}
+
+.panel-actions {
+  padding: 16px 20px;
+  background: #ffffff;
+  border-top: 1px solid #e0e0e0;
+}
+
+.action-button {
+  width: 100%;
+  padding: 10px;
+  background: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-button:hover {
+  background: #357abd;
+}
+
+.action-button:active {
+  transform: scale(0.98);
+}
+
+/* ========== RIGHT PANEL (Large) ========== */
+.right-panel {
+  flex: 1;
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.data-grid-wrapper {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  background: #fafafa;
+}
+
+.data-grid {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  font-size: 13px;
+}
+
+.data-grid thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.group-header {
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  padding: 10px;
+  font-weight: 600;
+  color: #555;
+  text-align: center;
+  font-size: 13px;
+}
+
+.col-header {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  padding: 8px 10px;
+  font-weight: 600;
+  color: #666;
+  text-align: center;
+  font-size: 12px;
+  min-width: 60px;
+}
+
+.col-header.fixed {
+  background: #f0f0f0;
+  min-width: 50px;
+  font-size: 12px;
+}
+
+.data-cell {
+  border: 1px solid #e0e0e0;
+  padding: 10px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s;
+  background: #ffffff;
+}
+
+.data-cell.fixed {
+  background: #fafafa;
+  color: #888;
+  min-width: 50px;
+}
+
+.data-cell.value-col {
+  padding: 4px;
+}
+
+.grid-input {
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  padding: 6px 8px;
+  font-size: 12px;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 2px;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.grid-input:focus {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.data-cell:hover {
+  background: #f9f9f9;
+}
+
+/* Màu cho các ô dữ liệu */
+.data-cell.white {
+  background-color: #ffffff;
+  color: #333;
+}
+
+.data-cell.red {
+  background: #ef4444;
+  color: white;
+  font-weight: 600;
+}
+
+.data-cell.red:hover {
+  background: #dc2626;
+}
+
+.data-cell.purple {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  font-weight: 600;
+}
+
+.data-cell.purple:hover {
+  background: #e1bee7;
+}
+
+/* Empty State */
+.empty-grid {
+  position: relative;
+}
+
+.empty-message {
+  padding: 60px 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-top: none;
+}
+
+/* ========== SCROLLBAR ========== */
+.left-panel::-webkit-scrollbar,
+.data-grid-wrapper::-webkit-scrollbar,
+.schedule-table-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.left-panel::-webkit-scrollbar-track,
+.data-grid-wrapper::-webkit-scrollbar-track,
+.schedule-table-wrapper::-webkit-scrollbar-track {
+  background: #f5f5f5;
+}
+
+.left-panel::-webkit-scrollbar-thumb,
+.data-grid-wrapper::-webkit-scrollbar-thumb,
+.schedule-table-wrapper::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+}
+
+.left-panel::-webkit-scrollbar-thumb:hover,
+.data-grid-wrapper::-webkit-scrollbar-thumb:hover,
+.schedule-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 1024px) {
+  .app-container {
+    flex-direction: column;
+  }
+  
+  .left-panel {
+    width: 100%;
+    max-height: 300px;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .right-panel {
+    flex: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .panel-toolbar {
+    flex-wrap: wrap;
+  }
+  
+  .data-grid {
+    font-size: 11px;
+  }
+  
+  .col-header {
+    padding: 6px 8px;
+    font-size: 11px;
+    min-width: 50px;
+  }
+  
+  .data-cell {
+    padding: 8px;
+    font-size: 11px;
+  }
+}
