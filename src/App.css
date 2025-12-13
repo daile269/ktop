@@ -414,17 +414,18 @@ body {
   }
 }
 
-/* ========== TABLES CONTAINER (2 bảng cạnh nhau) ========== */
+/* ========== TABLES CONTAINER (2 bảng mỗi hàng) ========== */
 .tables-container {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
   padding: 20px;
-  overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 60px);
 }
 
 .table-section {
   flex: 1;
-  min-width: 600px;
 }
 
 .table-title {
