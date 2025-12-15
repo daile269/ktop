@@ -1,15 +1,8 @@
 import { db } from './firebase';
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  setDoc, 
-  deleteDoc,
-  serverTimestamp 
-} from 'firebase/firestore';
+import { ref, set, get, remove } from 'firebase/database';
 
 /**
- * Lưu dữ liệu trang (T1, T2, dateValues) lên Firestore
+ * Lưu dữ liệu trang (T1, T2, dateValues) lên Realtime Database
  * @param {string} pageId - ID của trang (vd: 'q1', 'q2')
  * @param {Array} t1Values - Mảng giá trị T1 (300 phần tử)
  * @param {Array} t2Values - Mảng giá trị T2 (300 phần tử)
@@ -17,17 +10,31 @@ import {
  */
 export const savePageData = async (pageId, t1Values, t2Values, dateValues) => {
   try {
-    const pageRef = doc(db, 'pages', pageId);
+    const pageRef = ref(db, `pages/${pageId}`);
     
-    await setDoc(pageRef, {
+    // Tìm index cuối cùng có data
+    let lastIndex = -1;
+    for (let i = t1Values.length - 1; i >= 0; i--) {
+      if (t1Values[i] || t2Values[i] || dateValues[i]) {
+        lastIndex = i;
+        break;
+      }
+    }
+    
+    // Chỉ lưu data đến lastIndex (trim empty values ở cuối)
+    const trimmedT1 = lastIndex >= 0 ? t1Values.slice(0, lastIndex + 1) : [];
+    const trimmedT2 = lastIndex >= 0 ? t2Values.slice(0, lastIndex + 1) : [];
+    const trimmedDates = lastIndex >= 0 ? dateValues.slice(0, lastIndex + 1) : [];
+    
+    await set(pageRef, {
       pageId,
-      t1Values,
-      t2Values,
-      dateValues,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+      t1Values: trimmedT1,
+      t2Values: trimmedT2,
+      dateValues: trimmedDates,
+      updatedAt: new Date().toISOString()
+    });
     
-    console.log(`💾 Đã lưu trang ${pageId} lên Firestore`);
+
     return { success: true };
   } catch (error) {
     console.error('Lỗi khi lưu dữ liệu:', error);
@@ -36,27 +43,38 @@ export const savePageData = async (pageId, t1Values, t2Values, dateValues) => {
 };
 
 /**
- * Tải dữ liệu trang từ Firestore
+ * Tải dữ liệu trang từ Realtime Database
  * @param {string} pageId - ID của trang
  */
 export const loadPageData = async (pageId) => {
   try {
-    const pageRef = doc(db, 'pages', pageId);
-    const pageSnap = await getDoc(pageRef);
+    const pageRef = ref(db, `pages/${pageId}`);
+    const snapshot = await get(pageRef);
     
-    if (pageSnap.exists()) {
-      const data = pageSnap.data();
-      console.log(`✅ Đã tải trang ${pageId} từ Firestore`);
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      
+      // Pad data về 300 rows (hoặc ROWS constant)
+      const ROWS = 300;
+      const t1 = data.t1Values || [];
+      const t2 = data.t2Values || [];
+      const dates = data.dateValues || [];
+      
+      // Pad với empty strings
+      while (t1.length < ROWS) t1.push('');
+      while (t2.length < ROWS) t2.push('');
+      while (dates.length < ROWS) dates.push('');
+
       return { 
         success: true, 
         data: {
-          t1Values: data.t1Values || [],
-          t2Values: data.t2Values || [],
-          dateValues: data.dateValues || []
+          t1Values: t1,
+          t2Values: t2,
+          dateValues: dates
         }
       };
     } else {
-      console.log(`ℹ️ Trang ${pageId} chưa có dữ liệu`);
+
       return { success: true, data: null };
     }
   } catch (error) {
@@ -66,15 +84,15 @@ export const loadPageData = async (pageId) => {
 };
 
 /**
- * Xóa dữ liệu trang từ Firestore
+ * Xóa dữ liệu trang từ Realtime Database
  * @param {string} pageId - ID của trang
  */
 export const deletePageData = async (pageId) => {
   try {
-    const pageRef = doc(db, 'pages', pageId);
-    await deleteDoc(pageRef);
+    const pageRef = ref(db, `pages/${pageId}`);
+    await remove(pageRef);
     
-    console.log(`🗑️ Đã xóa trang ${pageId} khỏi Firestore`);
+
     return { success: true };
   } catch (error) {
     console.error('Lỗi khi xóa dữ liệu:', error);
@@ -83,7 +101,7 @@ export const deletePageData = async (pageId) => {
 };
 
 /**
- * Migration từ localStorage sang Firestore
+ * Migration từ localStorage sang Realtime Database (nếu cần)
  * @param {string} pageId - ID của trang
  */
 export const migrateFromLocalStorage = async (pageId) => {
@@ -98,7 +116,7 @@ export const migrateFromLocalStorage = async (pageId) => {
         const dateValues = parsed.dateValues || [];
         
         await savePageData(pageId, t1Values, t2Values, dateValues);
-        console.log('✅ Đã migrate dữ liệu từ localStorage sang Firestore');
+
         return { success: true };
       }
     }
