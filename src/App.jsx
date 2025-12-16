@@ -13,7 +13,7 @@ function App() {
   const [t3, setT3] = useState("");
 
   const TOTAL_TABLES = 60;
-  const ROWS = 300; // Tăng từ 150 lên 300 dòng
+  const ROWS = 366; // Tăng từ 150 lên 300 dòng
 
   // Lấy pageId từ URL (vd: /q1 -> pageId = 'q1')
   const pageId = window.location.pathname.slice(1) || "q1"; // Default là 'q1'
@@ -95,24 +95,45 @@ function App() {
     loadData();
   }, [pageId]);
 
+  // Auto-regenerate bảng khi dateValues thay đổi
+  useEffect(() => {
+    if (isDataLoaded) {
+      generateTableWithValues(allTValues);
+    }
+  }, [dateValues]);
+
   // Thuật toán sinh bảng (dùng chung cho cả 2 toa)
   const generateTableData = (tValues, toaName) => {
     const COLS = 10;
 
-    // Tính số rows thực tế dựa trên dữ liệu đã nhập
+    // Tính số rows thực tế dựa trên dateValues hoặc tValues
     let actualRows = 0;
+
+    // Tìm row cuối cùng có ngày
+    for (let i = dateValues.length - 1; i >= 0; i--) {
+      if (
+        dateValues[i] !== "" &&
+        dateValues[i] !== null &&
+        dateValues[i] !== undefined
+      ) {
+        actualRows = Math.max(actualRows, i + 1);
+        break;
+      }
+    }
+
+    // Hoặc tìm row cuối cùng có T value
     for (let i = tValues.length - 1; i >= 0; i--) {
       if (
         tValues[i] !== "" &&
         tValues[i] !== null &&
         tValues[i] !== undefined
       ) {
-        actualRows = i + 1;
+        actualRows = Math.max(actualRows, i + 1);
         break;
       }
     }
 
-    // Nếu không có dữ liệu, return empty
+    // Nếu không có dữ liệu gì, return empty
     if (actualRows === 0) {
       return [];
     }
@@ -390,25 +411,6 @@ function App() {
           return;
         }
 
-        // Helper function: Convert dd/mm/yyyy → yyyy-mm-dd
-        const convertToComparable = (dateStr) => {
-          if (!dateStr) return null;
-
-          // Nếu đã là yyyy-mm-dd format (từ date picker)
-          if (dateStr.includes("-")) {
-            return dateStr;
-          }
-
-          // Convert dd/mm/yyyy → yyyy-mm-dd
-          const parts = dateStr.split("/");
-          if (parts.length === 3) {
-            const [day, month, year] = parts;
-            return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-          }
-
-          return null;
-        };
-
         // Tạo array mới chỉ chứa các dòng KHÔNG bị xóa
         const newT1 = [];
         const newT2 = [];
@@ -417,12 +419,9 @@ function App() {
 
         for (let i = 0; i < ROWS; i++) {
           const dateStr = newDateValues[i];
-          const comparableDate = convertToComparable(dateStr);
 
           const shouldDelete =
-            comparableDate &&
-            comparableDate >= deleteDateFrom &&
-            comparableDate <= deleteDateTo;
+            dateStr && dateStr >= deleteDateFrom && dateStr <= deleteDateTo;
 
           if (!shouldDelete) {
             // Giữ lại dòng này
@@ -564,12 +563,13 @@ function App() {
             <tbody>
               {Array.from({ length: ROWS }, (_, rowIndex) => (
                 <tr key={rowIndex}>
-                  <td>{rowIndex + 1}</td>
+                  <td className="data-cell fixed">
+                    {String(rowIndex).padStart(2, "0")}
+                  </td>
                   <td>
                     <input
-                      type="text"
+                      type="date"
                       className="cell-input"
-                      placeholder="dd/mm/yyyy"
                       value={dateValues[rowIndex] || ""}
                       onChange={(e) => {
                         const newDateValues = [...dateValues];
@@ -678,9 +678,20 @@ function App() {
                     <tbody>
                       {tableData.map((row, rowIndex) => (
                         <tr key={rowIndex}>
-                          <td className="data-cell fixed">{rowIndex + 1}</td>
+                          <td className="data-cell fixed">
+                            {String(rowIndex).padStart(2, "0")}
+                          </td>
                           <td className="data-cell fixed date-col" colSpan="2">
-                            {dateValues[rowIndex] || ""}
+                            {dateValues[rowIndex]
+                              ? (() => {
+                                  // Convert yyyy-mm-dd → dd/mm/yyyy
+                                  const parts = dateValues[rowIndex].split("-");
+                                  if (parts.length === 3) {
+                                    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                                  }
+                                  return dateValues[rowIndex];
+                                })()
+                              : ""}
                           </td>
                           <td className="data-cell fixed value-col">
                             <input

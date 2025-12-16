@@ -20,7 +20,7 @@ body {
 
 /* ========== LEFT PANEL (Narrow) ========== */
 .left-panel {
-  width: 250px;
+  width: 300px;
   background: #fafafa;
   border-right: 1px solid #e0e0e0;
   display: flex;
@@ -142,18 +142,18 @@ body {
 
 .schedule-table .header-main {
   background: #ebebeb;
-  font-size: 11px;
+  font-size: 20px;
 }
 
 .schedule-table .header-group {
   background: #f0f0f0;
-  font-size: 11px;
+  font-size: 20px;
   color: #4a90e2;
 }
 
 .schedule-table .header-sub {
   background: #f8f8f8;
-  font-size: 11px;
+  font-size: 20px;
   font-weight: 500;
 }
 
@@ -167,7 +167,7 @@ body {
   width: 100%;
   border: none;
   padding: 6px 8px;
-  font-size: 12px;
+  font-size:  15px;
   text-align: center;
   background: transparent;
   outline: none;
@@ -273,7 +273,7 @@ body {
   flex: 1;
   overflow: auto;
   background: #fafafa;
-  max-height: 600px; /* Giới hạn chiều cao để có scroll */
+  max-height: 500px; /* Giới hạn chiều cao để có scroll */
 }
 
 .data-grid {
@@ -325,15 +325,15 @@ body {
 
 .col-header.fixed {
   background: #f0f0f0 !important;
-  min-width: 50px;
+  min-width: 60px;
   font-size: 12px;
 }
 
 .data-cell {
-  border: 1px solid #e0e0e0;
+  border: 2px solid #e0e0e0;
   padding: 10px;
   text-align: center;
-  font-size: 13px;
+  font-size: 20px;
   font-weight: 500;
   transition: all 0.15s;
   background: #ffffff;
@@ -355,14 +355,14 @@ body {
   max-width: 120px;
   text-align: left;
   padding-left: 12px;
-  font-size: 12px;
+  font-size: 18px;
 }
 
 .grid-input {
   width: 100%;
   border: 1px solid #e0e0e0;
   padding: 6px 8px;
-  font-size: 14px;
+  font-size: 20px;
   text-align: center;
   background: #ffffff;
   border-radius: 2px;
@@ -383,29 +383,30 @@ body {
 
 /* Màu cho các ô dữ liệu */
 .data-cell.white {
-  background-color: #fffbeb; /* Màu vàng nhạt */
+  background-color: #fff; /* Màu vàng nhạt */
   color: #333;
 }
 
 .data-cell.red {
-  background: #ef4444;
-  color: white;
+  background: #fff;
+  color: red;
   font-weight: 600;
 }
 
 .data-cell.red:hover {
   background: #dc2626;
+  color: white;
 }
 
 .data-cell.purple {
-  background: #d769e7;
-  color: #7b1fa2;
+  background: #f8c507bd;
+  color: #333;
   font-weight: 600;
 }
 
 .data-cell.purple:hover {
-  background: #e1bee7;
-}
+  background: #ccbc7a;
+  }
 
 /* Highlight cells và rows */
 .data-cell.highlighted-cell {
@@ -478,7 +479,7 @@ body {
   
   .left-panel {
     width: 100%;
-    max-height: 300px;
+    max-height: 360px;
     border-right: none;
     border-bottom: 1px solid #e0e0e0;
   }
@@ -522,8 +523,8 @@ body {
 
 .table-section {
   flex: 0 0 auto; /* Không co lại */
-  min-width: 800px; /* Width tối thiểu để giữ nguyên chiều rộng */
-  width: 800px; /* Width cố định */
+  min-width: 1200px; /* Width tối thiểu để giữ nguyên chiều rộng */
+  width: 1200px; /* Width cố định */
 }
 
 .table-title {
