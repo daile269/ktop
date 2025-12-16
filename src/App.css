@@ -414,19 +414,63 @@ body {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); /* Glow effect */
 }
 
+/* Highlight hàng - CHỈ border, KHÔNG đổi background (giữ màu gốc đỏ/tím) */
 .data-cell.highlighted-row {
   border: 2px solid #2563eb !important; /* Border xanh */
-  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.2); /* Inner glow */
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.3); /* Inner glow */
   font-weight: 600;
 }
 
-/* Highlight cho cells trắng - thêm background xanh nhạt */
-.data-cell.white.highlighted-cell {
-  background: #dbeafe !important;
+/* Highlight cột - CHỈ border, KHÔNG đổi background (giữ màu gốc đỏ/tím) */
+.data-cell.highlighted-column {
+  border: 2px solid #0ea5e9 !important;
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.3);
+}
+
+/* Override cho fixed cells khi highlight - CHỈ border */
+.data-cell.fixed.highlighted-column {
+  border: 2px solid #0ea5e9 !important;
+}
+
+.data-cell.fixed.highlighted-row {
+  border: 2px solid #2563eb !important;
+}
+
+/* CHỈ ô TRẮNG mới đổi background khi highlight - GIỐNG HOVER */
+.data-cell.white.highlighted-cell { 
+  background: #b3b6d0 !important; /* Giống hover */
 }
 
 .data-cell.white.highlighted-row {
-  background: #bfdbfe !important;
+  background: #b3b6d0 !important; /* Giống hover */
+}
+
+.data-cell.white.highlighted-column {
+  background: #b3b6d0 !important; /* Giống hover */
+}
+
+/* Ô ĐỎ khi highlight - GIỐNG HOVER */
+.data-cell.red.highlighted-row,
+.data-cell.red.highlighted-column {
+  background: #dc2626 !important; /* Giống hover */
+  color: white !important;
+}
+
+/* Ô TÍM/VÀNG khi highlight - GIỐNG HOVER */
+.data-cell.purple.highlighted-row,
+.data-cell.purple.highlighted-column {
+  background: #ccbc7a !important; /* Giống hover */
+}
+
+/* Fixed cells trắng khi highlight */
+.data-cell.fixed.white.highlighted-column,
+.data-cell.fixed.highlighted-column {
+  background: #b3b6d0 !important; /* Giống hover */
+}
+
+.data-cell.fixed.white.highlighted-row,
+.data-cell.fixed.highlighted-row {
+  background: #b3b6d0 !important; /* Giống hover */
 }
 
 /* Empty State */

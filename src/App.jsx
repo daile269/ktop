@@ -42,9 +42,10 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false); // Loading khi tính toán
   const [error, setError] = useState("");
 
-  // State cho highlight cells và rows
+  // State cho highlight cells, rows và T-columns
   const [highlightedCells, setHighlightedCells] = useState({}); // {tableIndex: {rowIndex: {colIndex: true}}}
   const [highlightedRows, setHighlightedRows] = useState({}); // {tableIndex: {rowIndex: true}}
+  const [highlightedTColumns, setHighlightedTColumns] = useState({}); // {tableIndex: true} - Highlight cột T (Thông số)
 
   // State cho delete modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -304,18 +305,21 @@ function App() {
     }, 100);
   };
 
-  // Handle click vào cell - bôi xanh 1 ô
+  // Handle click vào cell trong bảng dữ liệu - không làm gì
   const handleCellClick = (tableIndex, rowIndex, colIndex) => {
-    setHighlightedCells((prev) => {
-      const newState = { ...prev };
-      if (!newState[tableIndex]) newState[tableIndex] = {};
-      if (!newState[tableIndex][rowIndex]) newState[tableIndex][rowIndex] = {};
+    // Không làm gì - chỉ double click mới highlight hàng
+  };
 
-      // Toggle highlight
-      if (newState[tableIndex][rowIndex][colIndex]) {
-        delete newState[tableIndex][rowIndex][colIndex];
+  // Handle click vào cột T (Thông số) - highlight cả cột T
+  const handleTColumnClick = (tableIndex) => {
+    setHighlightedTColumns((prev) => {
+      const newState = { ...prev };
+
+      // Toggle highlight T column
+      if (newState[tableIndex]) {
+        delete newState[tableIndex];
       } else {
-        newState[tableIndex][rowIndex][colIndex] = true;
+        newState[tableIndex] = true;
       }
 
       return newState;
@@ -323,7 +327,7 @@ function App() {
   };
 
   // Handle double click vào cell - bôi xanh cả hàng
-  const handleCellDoubleClick = (tableIndex, rowIndex) => {
+  const handleCellDoubleClick = (tableIndex, rowIndex, colIndex) => {
     setHighlightedRows((prev) => {
       const newState = { ...prev };
       if (!newState[tableIndex]) newState[tableIndex] = {};
@@ -337,6 +341,12 @@ function App() {
 
       return newState;
     });
+  };
+
+  // Clear tất cả highlight (cột T và hàng) - KHÔNG xóa màu đỏ/tím của cells
+  const clearColumnHighlights = () => {
+    setHighlightedTColumns({}); // Xóa highlight cột T
+    setHighlightedRows({}); // Xóa highlight hàng
   };
 
   const handleTValueChange = (tableIndex, rowIndex, value) => {
@@ -754,6 +764,16 @@ function App() {
               Nhập dữ liệu toàn bộ Q
             </a>
           </button>
+          <button
+            className="toolbar-btn"
+            onClick={clearColumnHighlights}
+            style={{
+              marginLeft: "10px",
+              backgroundColor: "#ff9800",
+            }}
+          >
+            🗑️ Xóa highlight
+          </button>
         </div>
 
         {isGenerating && (
@@ -823,7 +843,21 @@ function App() {
                                   })()
                                 : ""}
                             </td>
-                            <td className="data-cell fixed value-col">
+                            <td
+                              className={`data-cell fixed value-col ${
+                                highlightedTColumns[tableIndex]
+                                  ? "highlighted-column"
+                                  : ""
+                              } ${
+                                highlightedRows[tableIndex]?.[rowIndex]
+                                  ? "highlighted-row"
+                                  : ""
+                              }`}
+                              onClick={() => handleTColumnClick(tableIndex)}
+                              onDoubleClick={() =>
+                                handleCellDoubleClick(tableIndex, rowIndex, -1)
+                              }
+                            >
                               <input
                                 type="text"
                                 className="grid-input"
@@ -839,10 +873,6 @@ function App() {
                               />
                             </td>
                             {row.map((cell, colIndex) => {
-                              const isCellHighlighted =
-                                highlightedCells[tableIndex]?.[rowIndex]?.[
-                                  colIndex
-                                ];
                               const isRowHighlighted =
                                 highlightedRows[tableIndex]?.[rowIndex];
 
@@ -850,8 +880,6 @@ function App() {
                                 <td
                                   key={colIndex}
                                   className={`data-cell ${cell.color} ${
-                                    isCellHighlighted ? "highlighted-cell" : ""
-                                  } ${
                                     isRowHighlighted ? "highlighted-row" : ""
                                   }`}
                                   onClick={() =>
@@ -862,7 +890,11 @@ function App() {
                                     )
                                   }
                                   onDoubleClick={() =>
-                                    handleCellDoubleClick(tableIndex, rowIndex)
+                                    handleCellDoubleClick(
+                                      tableIndex,
+                                      rowIndex,
+                                      colIndex
+                                    )
                                   }
                                 >
                                   {cell.value}
