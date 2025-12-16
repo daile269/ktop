@@ -2,13 +2,16 @@ import { db } from './firebase';
 import { ref, set, get, remove } from 'firebase/database';
 
 /**
- * Lưu dữ liệu trang (T1, T2, dateValues) lên Realtime Database
+ * Lưu dữ liệu trang lên Realtime Database
  * @param {string} pageId - ID của trang (vd: 'q1', 'q2')
- * @param {Array} t1Values - Mảng giá trị T1 (300 phần tử)
- * @param {Array} t2Values - Mảng giá trị T2 (300 phần tử)
- * @param {Array} dateValues - Mảng giá trị ngày tháng (300 phần tử)
+ * @param {Array} t1Values - Mảng giá trị T1
+ * @param {Array} t2Values - Mảng giá trị T2
+ * @param {Array} dateValues - Mảng giá trị ngày tháng
+ * @param {Array} deletedRows - Mảng đánh dấu rows bị xóa
+ * @param {number} purpleRangeFrom - Khoảng số bắt đầu tô tím
+ * @param {number} purpleRangeTo - Khoảng số kết thúc tô tím
  */
-export const savePageData = async (pageId, t1Values, t2Values, dateValues) => {
+export const savePageData = async (pageId, t1Values, t2Values, dateValues, deletedRows = [], purpleRangeFrom = 0, purpleRangeTo = 0) => {
   try {
     const pageRef = ref(db, `pages/${pageId}`);
     
@@ -25,12 +28,16 @@ export const savePageData = async (pageId, t1Values, t2Values, dateValues) => {
     const trimmedT1 = lastIndex >= 0 ? t1Values.slice(0, lastIndex + 1) : [];
     const trimmedT2 = lastIndex >= 0 ? t2Values.slice(0, lastIndex + 1) : [];
     const trimmedDates = lastIndex >= 0 ? dateValues.slice(0, lastIndex + 1) : [];
+    const trimmedDeleted = lastIndex >= 0 ? deletedRows.slice(0, lastIndex + 1) : [];
     
     await set(pageRef, {
       pageId,
       t1Values: trimmedT1,
       t2Values: trimmedT2,
       dateValues: trimmedDates,
+      deletedRows: trimmedDeleted,
+      purpleRangeFrom,  // Lưu purple range
+      purpleRangeTo,
       updatedAt: new Date().toISOString()
     });
     
@@ -54,23 +61,28 @@ export const loadPageData = async (pageId) => {
     if (snapshot.exists()) {
       const data = snapshot.val();
       
-      // Pad data về 300 rows (hoặc ROWS constant)
+      // Pad data về 300 rows
       const ROWS = 300;
       const t1 = data.t1Values || [];
       const t2 = data.t2Values || [];
       const dates = data.dateValues || [];
+      const deleted = data.deletedRows || [];
       
-      // Pad với empty strings
+      // Pad với empty strings/false
       while (t1.length < ROWS) t1.push('');
       while (t2.length < ROWS) t2.push('');
       while (dates.length < ROWS) dates.push('');
+      while (deleted.length < ROWS) deleted.push(false);
 
       return { 
         success: true, 
         data: {
           t1Values: t1,
           t2Values: t2,
-          dateValues: dates
+          dateValues: dates,
+          deletedRows: deleted,
+          purpleRangeFrom: data.purpleRangeFrom || 0,  // Load purple range
+          purpleRangeTo: data.purpleRangeTo || 0
         }
       };
     } else {
