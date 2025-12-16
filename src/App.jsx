@@ -6,8 +6,14 @@ import {
   deletePageData,
   migrateFromLocalStorage,
 } from "./dataService";
+import InputPage from "./InputPage";
 
 function App() {
+  // Check if route is /input
+  const pathname = window.location.pathname.slice(1);
+  if (pathname === "input") {
+    return <InputPage />;
+  }
   const [t1, setT1] = useState("");
   const [t2, setT2] = useState("");
   const [t3, setT3] = useState("");
@@ -16,7 +22,7 @@ function App() {
   const ROWS = 366; // Tăng từ 150 lên 300 dòng
 
   // Lấy pageId từ URL (vd: /q1 -> pageId = 'q1')
-  const pageId = window.location.pathname.slice(1) || "q1"; // Default là 'q1'
+  const pageId = pathname || "q1"; // Default là 'q1'
 
   // State cho tất cả 60 bảng
   const [allTableData, setAllTableData] = useState(
@@ -736,8 +742,17 @@ function App() {
       {/* Right Panel - Bảng dữ liệu chính */}
       <div className="right-panel">
         <div className="toolbar">
-          <button className="toolbar-btn" onClick={handleGenerate}>
-            Lưu dữ liệu
+          <button className="toolbar-btn">
+            <a
+              href="/input"
+              style={{
+                textDecoration: "none",
+                color: "white",
+                fontSize: "16px",
+              }}
+            >
+              Nhập dữ liệu toàn bộ Q
+            </a>
           </button>
         </div>
 
