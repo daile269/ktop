@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./App.css";
+import "./InputPage.css";
 import { savePageData, loadPageData } from "./dataService";
 
 function InputPage() {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./App.css";
+import "./TopToolbar.css";
 import {
   savePageData,
   loadPageData,
@@ -54,6 +55,12 @@ function App() {
   const [deleteRowTo, setDeleteRowTo] = useState("");
   const [deleteDateFrom, setDeleteDateFrom] = useState("");
   const [deleteDateTo, setDeleteDateTo] = useState("");
+
+  // State cho add row modal
+  const [showAddRowModal, setShowAddRowModal] = useState(false);
+  const [newRowDate, setNewRowDate] = useState("");
+  const [newRowT1, setNewRowT1] = useState("");
+  const [newRowT2, setNewRowT2] = useState("");
 
   // State cho purple range (tô màu tím)
   const [purpleRangeFrom, setPurpleRangeFrom] = useState(0);
@@ -305,6 +312,29 @@ function App() {
     }, 100);
   };
 
+  // Save data without regenerating tables
+  const handleSaveData = async () => {
+    setSaveStatus("💾 Đang lưu...");
+    const result = await savePageData(
+      pageId,
+      allTValues[0],
+      allTValues[1],
+      dateValues,
+      deletedRows,
+      purpleRangeFrom,
+      purpleRangeTo
+    );
+
+    if (result.success) {
+      setSaveStatus("✅ Đã lưu dữ liệu thành công");
+    } else {
+      setSaveStatus("⚠️ Lỗi: " + result.error);
+      setError(result.error);
+    }
+
+    setTimeout(() => setSaveStatus(""), 2000);
+  };
+
   // Handle click vào cell trong bảng dữ liệu - không làm gì
   const handleCellClick = (tableIndex, rowIndex, colIndex) => {
     // Không làm gì - chỉ double click mới highlight hàng
@@ -349,10 +379,100 @@ function App() {
     setHighlightedRows({}); // Xóa highlight hàng
   };
 
+  // Navigate to input page
+  const handleInputAllQ = () => {
+    window.location.href = "/input";
+  };
+
   const handleTValueChange = (tableIndex, rowIndex, value) => {
     const newAllTValues = [...allTValues];
     newAllTValues[tableIndex][rowIndex] = value;
     setAllTValues(newAllTValues);
+  };
+
+  // Add new row - show modal
+  const handleAddRow = () => {
+    setNewRowDate(""); // Reset date
+    setNewRowT1(""); // Reset T1
+    setNewRowT2(""); // Reset T2
+    setShowAddRowModal(true);
+  };
+
+  // Confirm add row with selected date
+  const confirmAddRow = async () => {
+    if (!newRowDate) {
+      alert("⚠️ Vui lòng chọn ngày!");
+      return;
+    }
+
+    // Find the last non-empty row
+    let lastRowIndex = -1;
+    for (let i = ROWS - 1; i >= 0; i--) {
+      // Skip deleted rows
+      if (deletedRows[i]) continue;
+
+      // Check if row has data
+      if (dateValues[i] || allTValues[0][i] || allTValues[1][i]) {
+        lastRowIndex = i;
+        break;
+      }
+    }
+
+    const newRowIndex = lastRowIndex + 1;
+
+    if (newRowIndex >= ROWS) {
+      alert("⚠️ Đã đạt giới hạn số hàng!");
+      setShowAddRowModal(false);
+      return;
+    }
+
+    // Initialize new row with date
+    const newDateValues = [...dateValues];
+    const newAllTValues = [...allTValues];
+
+    // Set date and T values for new row
+    newDateValues[newRowIndex] = newRowDate;
+    newAllTValues[0][newRowIndex] = newRowT1; // T1
+    newAllTValues[1][newRowIndex] = newRowT2; // T2
+
+    setDateValues(newDateValues);
+    setAllTValues(newAllTValues);
+
+    // Sync to all Q1-Q10
+    setSaveStatus("💾 Đang đồng bộ...");
+    const syncPromises = [];
+    for (let i = 1; i <= 10; i++) {
+      const qId = `q${i}`;
+      const result = await loadPageData(qId);
+      if (result.success && result.data) {
+        // Update with new row
+        const qTValues = [...result.data.t1Values];
+        const qT2Values = [...result.data.t2Values];
+        qTValues[newRowIndex] = newRowT1; // Use T1 from modal
+        qT2Values[newRowIndex] = newRowT2; // Use T2 from modal
+
+        syncPromises.push(
+          savePageData(
+            qId,
+            qTValues,
+            qT2Values,
+            newDateValues,
+            result.data.deletedRows || [],
+            purpleRangeFrom,
+            purpleRangeTo
+          )
+        );
+      }
+    }
+
+    await Promise.all(syncPromises);
+    setSaveStatus("✅ Đã thêm hàng mới và đồng bộ");
+    setTimeout(() => setSaveStatus(""), 2000);
+
+    setShowAddRowModal(false);
+    alert(
+      `✅ Đã thêm hàng mới với ngày ${newRowDate} tại vị trí ${newRowIndex + 1}`
+    );
   };
 
   const clearData = () => {
@@ -532,26 +652,19 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      {/* Left Panel - Lịch trình và Chi tiết Toa */}
-      <div className="left-panel">
-        <div className="panel-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <h1>Trang:</h1>
+    <div className="app-container-full">
+      {/* Top Toolbar - Chứa tất cả controls */}
+      <div className="top-toolbar">
+        <div className="toolbar-section">
+          {/* Page Selector */}
+          <div className="toolbar-group">
+            <label>QUYỂN:</label>
             <select
               value={pageId}
               onChange={(e) => {
                 window.location.pathname = `/${e.target.value}`;
               }}
-              style={{
-                padding: "6px 12px",
-                fontSize: "14px",
-                fontWeight: "600",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                cursor: "pointer",
-                backgroundColor: "#fff",
-              }}
+              className="toolbar-select"
             >
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
                 <option key={num} value={`q${num}`}>
@@ -559,223 +672,72 @@ function App() {
                 </option>
               ))}
             </select>
+            <button
+              onClick={handleAddRow}
+              className="toolbar-button success"
+              style={{ marginLeft: "8px" }}
+            >
+              ➕ Thêm
+            </button>
           </div>
-          {isLoading && (
-            <span
-              style={{ marginLeft: "10px", color: "#007bff", fontSize: "14px" }}
+
+          {/* Purple Range */}
+          <div className="toolbar-group">
+            <label>Khoảng báo màu:</label>
+            <input
+              type="number"
+              value={purpleRangeFrom}
+              onChange={(e) => setPurpleRangeFrom(e.target.value)}
+              placeholder="Từ"
+              className="toolbar-input-small"
+            />
+            <span>đến</span>
+            <input
+              type="number"
+              value={purpleRangeTo}
+              onChange={(e) => setPurpleRangeTo(e.target.value)}
+              placeholder="Đến"
+              className="toolbar-input-small"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="toolbar-group">
+            <button
+              onClick={handleInputAllQ}
+              className="toolbar-button primary"
             >
-              ⏳ Đang tải...
-            </span>
-          )}
-          {!isLoading && saveStatus && (
-            <span
-              style={{ marginLeft: "10px", color: "#28a745", fontSize: "14px" }}
+              📥 Nhập dữ liệu toàn bộ Q
+            </button>
+            <button onClick={clearColumnHighlights} className="toolbar-button">
+              🔄 Xóa highlight
+            </button>
+            <button onClick={handleSaveData} className="toolbar-button success">
+              💾 Lưu dữ liệu
+            </button>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="toolbar-button danger"
             >
-              {saveStatus}
-            </span>
-          )}
-          {error && (
-            <span
-              style={{ marginLeft: "10px", color: "#dc3545", fontSize: "12px" }}
-            >
-              {error}
-            </span>
-          )}
-        </div>
+              🗑️ Xóa dữ liệu
+            </button>
+          </div>
 
-        {/* Purple Range Settings */}
-        <div
-          style={{
-            padding: "12px 20px",
-            background: "#f9f9f9",
-            borderBottom: "1px solid #e0e0e0",
-            display: "flex",
-            alignItems: "center",
-            gap: "12px",
-          }}
-        >
-          <label style={{ fontSize: "14px", fontWeight: "600", color: "#555" }}>
-            Nhập khoảng số muốn báo màu:
-          </label>
-          <input
-            type="number"
-            min="1"
-            max="100"
-            value={purpleRangeFrom}
-            onChange={(e) => setPurpleRangeFrom(parseInt(e.target.value) || 0)}
-            style={{
-              width: "50px",
-              padding: "4px 8px",
-              fontSize: "20px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              textAlign: "center",
-            }}
-          />
-          <span style={{ fontSize: "20px", color: "#666" }}>đến</span>
-          <input
-            type="number"
-            min="1"
-            max="100"
-            value={purpleRangeTo}
-            onChange={(e) => setPurpleRangeTo(parseInt(e.target.value) || 0)}
-            style={{
-              width: "50px",
-              padding: "4px 8px",
-              fontSize: "20px",
-              border: "1px solid #ddd",
-              borderRadius: "4px",
-              textAlign: "center",
-            }}
-          />
-        </div>
-
-        <div className="schedule-table-wrapper">
-          <table className="schedule-table">
-            <thead>
-              <tr>
-                <th rowSpan="2" className="header-main">
-                  STT
-                </th>
-                <th rowSpan="2" className="header-main">
-                  Ngày-tháng-năm
-                </th>
-                <th colSpan="2" className="header-group">
-                  Q1
-                </th>
-                {/* <th colSpan="2" className="header-group">Toa 2</th>
-                <th colSpan="2" className="header-group">Toa 3</th> */}
-              </tr>
-              <tr>
-                <th className="header-sub">T1</th>
-                <th className="header-sub">T2</th>
-                {/* <th className="header-sub">T1</th>
-                <th className="header-sub">T2</th>
-                <th className="header-sub">T1</th>
-                <th className="header-sub">T2</th> */}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: ROWS }, (_, rowIndex) => {
-                // Skip deleted rows
-                if (deletedRows[rowIndex]) return null;
-
-                return (
-                  <tr key={rowIndex}>
-                    <td className="data-cell fixed">
-                      {String(rowIndex).padStart(2, "0")}
-                    </td>
-                    <td>
-                      <input
-                        type="date"
-                        className="cell-input"
-                        value={dateValues[rowIndex] || ""}
-                        onChange={async (e) => {
-                          const newDateValues = [...dateValues];
-                          newDateValues[rowIndex] = e.target.value;
-                          setDateValues(newDateValues);
-
-                          // Sync sang tất cả Q1-Q10
-                          const syncPromises = [];
-                          for (let i = 1; i <= 10; i++) {
-                            const qId = `q${i}`;
-                            // Load data hiện tại của Q này
-                            const result = await loadPageData(qId);
-                            if (result.success && result.data) {
-                              // Update dateValues và save lại
-                              syncPromises.push(
-                                savePageData(
-                                  qId,
-                                  result.data.t1Values,
-                                  result.data.t2Values,
-                                  newDateValues,
-                                  result.data.deletedRows || [],
-                                  purpleRangeFrom,
-                                  purpleRangeTo
-                                )
-                              );
-                            }
-                          }
-                          await Promise.all(syncPromises);
-                        }}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="cell-input small"
-                        value={allTValues[0][rowIndex] || ""}
-                        onChange={(e) =>
-                          handleTValueChange(0, rowIndex, e.target.value)
-                        }
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="cell-input small"
-                        value={allTValues[1][rowIndex] || ""}
-                        onChange={(e) =>
-                          handleTValueChange(1, rowIndex, e.target.value)
-                        }
-                      />
-                    </td>
-                    {/* <td><input type="text" className="cell-input small" /></td>
-                  <td><input type="text" className="cell-input small" /></td>
-                  <td><input type="text" className="cell-input small" /></td>
-                  <td><input type="text" className="cell-input small" /></td> */}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="panel-actions">
-          <button
-            className="action-button"
-            onClick={handleGenerate}
-            disabled={isGenerating}
-          >
-            {isGenerating ? "⏳ Đang lưu..." : "Lưu dữ liệu"}
-          </button>
-          <button
-            className="action-button"
-            onClick={clearData}
-            style={{ marginTop: "10px", backgroundColor: "#dc3545" }}
-          >
-            Xóa dữ liệu
-          </button>
+          {/* Status Messages */}
+          <div className="toolbar-group">
+            {isLoading && (
+              <span className="status-loading">⏳ Đang tải...</span>
+            )}
+            {!isLoading && saveStatus && (
+              <span className="status-success">{saveStatus}</span>
+            )}
+            {error && <span className="status-error">{error}</span>}
+          </div>
         </div>
       </div>
 
-      {/* Right Panel - Bảng dữ liệu chính */}
-      <div className="right-panel">
-        <div className="toolbar">
-          <button className="toolbar-btn">
-            <a
-              href="/input"
-              style={{
-                textDecoration: "none",
-                color: "white",
-                fontSize: "16px",
-              }}
-            >
-              Nhập dữ liệu toàn bộ Q
-            </a>
-          </button>
-          <button
-            className="toolbar-btn"
-            onClick={clearColumnHighlights}
-            style={{
-              marginLeft: "10px",
-              backgroundColor: "#ff9800",
-            }}
-          >
-            🗑️ Xóa highlight
-          </button>
-        </div>
-
+      {/* Main Content - Tables */}
+      <div className="main-content">
         {isGenerating && (
           <div className="loading-overlay">
             <div className="loading-spinner">
@@ -831,17 +793,46 @@ function App() {
                               className="data-cell fixed date-col"
                               colSpan="2"
                             >
-                              {dateValues[rowIndex]
-                                ? (() => {
-                                    // Convert yyyy-mm-dd → dd/mm/yyyy
-                                    const parts =
-                                      dateValues[rowIndex].split("-");
-                                    if (parts.length === 3) {
-                                      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                              <input
+                                type="date"
+                                className="date-input"
+                                value={dateValues[rowIndex] || ""}
+                                onChange={async (e) => {
+                                  const newDateValues = [...dateValues];
+                                  newDateValues[rowIndex] = e.target.value;
+                                  setDateValues(newDateValues);
+
+                                  // Sync sang tất cả Q1-Q10
+                                  const syncPromises = [];
+                                  for (let i = 1; i <= 10; i++) {
+                                    const qId = `q${i}`;
+                                    // Load data hiện tại của Q này
+                                    const result = await loadPageData(qId);
+                                    if (result.success && result.data) {
+                                      // Update dateValues và save lại
+                                      syncPromises.push(
+                                        savePageData(
+                                          qId,
+                                          result.data.t1Values,
+                                          result.data.t2Values,
+                                          newDateValues,
+                                          result.data.deletedRows || [],
+                                          purpleRangeFrom,
+                                          purpleRangeTo
+                                        )
+                                      );
                                     }
-                                    return dateValues[rowIndex];
-                                  })()
-                                : ""}
+                                  }
+                                  await Promise.all(syncPromises);
+                                }}
+                                style={{
+                                  width: "100%",
+                                  border: "none",
+                                  background: "transparent",
+                                  fontSize: "20px",
+                                  padding: "4px",
+                                }}
+                              />
                             </td>
                             <td
                               className={`data-cell fixed value-col ${
@@ -1007,6 +998,85 @@ function App() {
               </button>
               <button className="btn-delete" onClick={handleDelete}>
                 Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Row Modal */}
+      {showAddRowModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>➕ Thêm hàng mới</h3>
+            </div>
+
+            <div className="modal-body">
+              <div className="form-group">
+                <label>Chọn ngày:</label>
+                <input
+                  type="date"
+                  value={newRowDate}
+                  onChange={(e) => setNewRowDate(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    fontSize: "14px",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                  }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginTop: "12px" }}>
+                <label>T1 (không bắt buộc):</label>
+                <input
+                  type="text"
+                  value={newRowT1}
+                  onChange={(e) => setNewRowT1(e.target.value)}
+                  placeholder="Nhập T1"
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    fontSize: "14px",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                  }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginTop: "12px" }}>
+                <label>T2 (không bắt buộc):</label>
+                <input
+                  type="text"
+                  value={newRowT2}
+                  onChange={(e) => setNewRowT2(e.target.value)}
+                  placeholder="Nhập T2"
+                  style={{
+                    width: "100%",
+                    padding: "8px",
+                    fontSize: "14px",
+                    border: "1px solid #ddd",
+                    borderRadius: "4px",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowAddRowModal(false)}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn-delete"
+                onClick={confirmAddRow}
+                style={{ background: "#28a745" }}
+              >
+                Thêm
               </button>
             </div>
           </div>

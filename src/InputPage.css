@@ -1,0 +1,27 @@
+/* InputPage - Large Font Styles */
+
+/* Table headers */
+.schedule-table th {
+  font-size: 20px !important;
+  padding: 12px !important;
+}
+
+/* Table cells */
+.schedule-table td {
+  font-size: 20px !important;
+  padding: 8px !important;
+  border: black solid 2px !important;
+}
+
+/* All inputs in table */
+.schedule-table .cell-input {
+  font-size: 20px !important;
+  padding: 8px !important;
+  min-height: 40px;
+}
+
+.schedule-table .cell-input.small {
+  font-size: 20px !important;
+  padding: 8px !important;
+  min-height: 40px;
+}
