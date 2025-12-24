@@ -50,9 +50,7 @@ function App() {
 
   // State cho delete modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deleteOption, setDeleteOption] = useState("all"); // 'all', 'rows', 'dates'
-  const [deleteRowFrom, setDeleteRowFrom] = useState("");
-  const [deleteRowTo, setDeleteRowTo] = useState("");
+  const [deleteOption, setDeleteOption] = useState("all"); // 'all', 'firstRow', 'dates'
   const [deleteDateFrom, setDeleteDateFrom] = useState("");
   const [deleteDateTo, setDeleteDateTo] = useState("");
 
@@ -71,6 +69,9 @@ function App() {
 
   // State cho deleted rows (đánh dấu row bị xóa)
   const [deletedRows, setDeletedRows] = useState(Array(ROWS).fill(false));
+
+  // State cho delete first row modal
+  const [showDeleteFirstRowModal, setShowDeleteFirstRowModal] = useState(false);
 
   // Helper function to format date to Vietnamese
   const formatDateToVietnamese = (dateString) => {
@@ -559,6 +560,61 @@ function App() {
     alert(`✅ Đã xóa các dòng cũ, giữ lại ${n} dòng cuối cùng!`);
   };
 
+  // Delete first visible row
+  const handleDeleteFirstRow = async () => {
+    // Find first non-deleted row with data
+    let firstRowIndex = -1;
+    for (let i = 0; i < ROWS; i++) {
+      // Skip deleted rows
+      if (deletedRows[i]) continue;
+
+      // Check if row has data
+      if (dateValues[i] || allTValues[0][i] || allTValues[1][i]) {
+        firstRowIndex = i;
+        break;
+      }
+    }
+
+    if (firstRowIndex === -1) {
+      alert("⚠️ Không có dòng nào để xóa!");
+      setShowDeleteFirstRowModal(false);
+      return;
+    }
+
+    // Mark first row as deleted
+    const newDeletedRows = [...deletedRows];
+    newDeletedRows[firstRowIndex] = true;
+    setDeletedRows(newDeletedRows);
+
+    // Sync to all Q1-Q10
+    setSaveStatus("💾 Đang đồng bộ...");
+    const syncPromises = [];
+    for (let i = 1; i <= 10; i++) {
+      const qId = `q${i}`;
+      const result = await loadPageData(qId);
+      if (result.success && result.data) {
+        syncPromises.push(
+          savePageData(
+            qId,
+            result.data.t1Values,
+            result.data.t2Values,
+            dateValues,
+            newDeletedRows,
+            purpleRangeFrom,
+            purpleRangeTo
+          )
+        );
+      }
+    }
+
+    await Promise.all(syncPromises);
+    setSaveStatus("✅ Đã xóa dòng đầu tiên và đồng bộ");
+    setTimeout(() => setSaveStatus(""), 2000);
+
+    setShowDeleteFirstRowModal(false);
+    alert(`✅ Đã xóa dòng ${firstRowIndex + 1}!`);
+  };
+
   const clearData = () => {
     setShowDeleteModal(true);
   };
@@ -595,65 +651,11 @@ function App() {
         setIsDataLoaded(false);
 
         alert("✅ Đã xóa tất cả dữ liệu Q1-Q10!");
-      } else if (deleteOption === "rows") {
-        // Đánh dấu rows bị xóa (soft delete)
-        const from = parseInt(deleteRowFrom) - 1;
-        const to = parseInt(deleteRowTo) - 1;
-
-        if (isNaN(from) || isNaN(to) || from < 0 || to >= ROWS || from > to) {
-          alert("⚠️ Số dòng không hợp lệ!");
-          return;
-        }
-
-        const deleteCount = to - from + 1;
-        const newDeletedRows = [...deletedRows];
-
-        // Đánh dấu deleted (KHÔNG shift data)
-        for (let i = from; i <= to; i++) {
-          newDeletedRows[i] = true;
-        }
-
-        setDeletedRows(newDeletedRows);
-
-        // Lưu Q hiện tại
-        setSaveStatus("💾 Đang lưu...");
-        const result = await savePageData(
-          pageId,
-          allTValues[0],
-          allTValues[1],
-          dateValues,
-          newDeletedRows,
-          purpleRangeFrom,
-          purpleRangeTo
-        );
-
-        // Sync deletedRows sang Q1-Q10
-        for (let i = 1; i <= 10; i++) {
-          const qId = `q${i}`;
-          if (qId !== pageId) {
-            const qResult = await loadPageData(qId);
-            if (qResult.success && qResult.data) {
-              await savePageData(
-                qId,
-                qResult.data.t1Values,
-                qResult.data.t2Values,
-                dateValues,
-                newDeletedRows,
-                purpleRangeFrom,
-                purpleRangeTo
-              );
-            }
-          }
-        }
-
-        if (result.success) {
-          setSaveStatus("✅ Đã lưu dữ liệu thành công");
-          alert(`✅ Đã xóa ${deleteCount} dòng (đồng bộ Q1-Q10)!`);
-        } else {
-          setSaveStatus("⚠️ Lỗi: " + result.error);
-        }
-
-        setTimeout(() => setSaveStatus(""), 2000);
+      } else if (deleteOption === "firstRow") {
+        // Đóng modal xóa dữ liệu và mở modal xác nhận xóa dòng đầu tiên
+        setShowDeleteModal(false);
+        setShowDeleteFirstRowModal(true);
+        return; // Không reset form ở đây
       } else if (deleteOption === "dates") {
         // Đánh dấu rows theo ngày bị xóa (soft delete)
         if (!deleteDateFrom || !deleteDateTo) {
@@ -726,8 +728,6 @@ function App() {
 
       // Reset form
       setDeleteOption("all");
-      setDeleteRowFrom("");
-      setDeleteRowTo("");
       setDeleteDateFrom("");
       setDeleteDateTo("");
     } catch (error) {
@@ -1026,75 +1026,108 @@ function App() {
           className="modal-overlay"
           onClick={() => setShowDeleteModal(false)}
         >
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Xóa dữ liệu </h3>
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "600px", width: "90%" }}
+          >
+            <h3 style={{ fontSize: "24px" }}>Xóa dữ liệu</h3>
 
             <div className="modal-body">
               <div className="radio-group">
-                <label>
+                <label
+                  style={{
+                    fontSize: "35px",
+                    marginBottom: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
                   <input
                     type="radio"
                     value="all"
                     checked={deleteOption === "all"}
                     onChange={(e) => setDeleteOption(e.target.value)}
+                    style={{ width: "20px", height: "20px", cursor: "pointer" }}
                   />
                   Xóa tất cả dữ liệu
                 </label>
 
-                <label>
+                <label
+                  style={{
+                    fontSize: "35px",
+                    marginBottom: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
                   <input
                     type="radio"
-                    value="rows"
-                    checked={deleteOption === "rows"}
+                    value="firstRow"
+                    checked={deleteOption === "firstRow"}
                     onChange={(e) => setDeleteOption(e.target.value)}
+                    style={{ width: "20px", height: "20px", cursor: "pointer" }}
                   />
-                  Xóa theo số dòng
+                  Xóa dòng
                 </label>
 
-                {deleteOption === "rows" && (
-                  <div className="input-row">
-                    <input
-                      type="number"
-                      placeholder="Từ dòng"
-                      value={deleteRowFrom}
-                      onChange={(e) => setDeleteRowFrom(e.target.value)}
-                      min="1"
-                      max={ROWS}
-                    />
-                    <span>đến</span>
-                    <input
-                      type="number"
-                      placeholder="Đến dòng"
-                      value={deleteRowTo}
-                      onChange={(e) => setDeleteRowTo(e.target.value)}
-                      min="1"
-                      max={ROWS}
-                    />
-                  </div>
-                )}
-
-                <label>
+                <label
+                  style={{
+                    fontSize: "35px",
+                    marginBottom: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
                   <input
                     type="radio"
                     value="dates"
                     checked={deleteOption === "dates"}
                     onChange={(e) => setDeleteOption(e.target.value)}
+                    style={{ width: "20px", height: "20px", cursor: "pointer" }}
                   />
                   Xóa theo khoảng ngày
                 </label>
 
                 {deleteOption === "dates" && (
-                  <div className="input-row">
+                  <div
+                    className="input-row"
+                    style={{
+                      marginTop: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
                     <input
                       type="date"
                       value={deleteDateFrom}
                       onChange={(e) => setDeleteDateFrom(e.target.value)}
+                      style={{
+                        padding: "12px",
+                        fontSize: "18px",
+                        border: "2px solid #ddd",
+                        borderRadius: "6px",
+                        flex: 1,
+                      }}
                     />
-                    <span>đến</span>
+                    <span style={{ fontSize: "18px", fontWeight: "bold" }}>
+                      đến
+                    </span>
                     <input
                       type="date"
                       value={deleteDateTo}
                       onChange={(e) => setDeleteDateTo(e.target.value)}
+                      style={{
+                        padding: "12px",
+                        fontSize: "18px",
+                        border: "2px solid #ddd",
+                        borderRadius: "6px",
+                        flex: 1,
+                      }}
                     />
                   </div>
                 )}
@@ -1105,10 +1138,15 @@ function App() {
               <button
                 className="btn-cancel"
                 onClick={() => setShowDeleteModal(false)}
+                style={{ fontSize: "18px", padding: "12px 24px" }}
               >
                 Hủy
               </button>
-              <button className="btn-delete" onClick={handleDelete}>
+              <button
+                className="btn-delete"
+                onClick={handleDelete}
+                style={{ fontSize: "18px", padding: "12px 24px" }}
+              >
                 Xóa
               </button>
             </div>
@@ -1119,30 +1157,51 @@ function App() {
       {/* Add Row Modal */}
       {showAddRowModal && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div
+            className="modal-content"
+            style={{ maxWidth: "600px", width: "90%" }}
+          >
             <div className="modal-header">
-              <h3>➕ Thêm hàng mới</h3>
+              <h3 style={{ fontSize: "24px" }}>➕ Thêm hàng mới</h3>
             </div>
 
             <div className="modal-body">
               <div className="form-group">
-                <label>Chọn ngày (ngày/tháng/năm):</label>
+                <label
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "bold",
+                    marginBottom: "8px",
+                    display: "block",
+                  }}
+                >
+                  Chọn ngày (ngày/tháng/năm):
+                </label>
                 <input
                   type="date"
                   value={newRowDate}
                   onChange={(e) => setNewRowDate(e.target.value)}
                   style={{
                     width: "100%",
-                    padding: "8px",
-                    fontSize: "14px",
-                    border: "1px solid #ddd",
-                    borderRadius: "4px",
+                    padding: "12px",
+                    fontSize: "18px",
+                    border: "2px solid #ddd",
+                    borderRadius: "6px",
                   }}
                 />
               </div>
 
-              <div className="form-group" style={{ marginTop: "12px" }}>
-                <label>T1 (không bắt buộc):</label>
+              <div className="form-group" style={{ marginTop: "20px" }}>
+                <label
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "bold",
+                    marginBottom: "8px",
+                    display: "block",
+                  }}
+                >
+                  T1 (không bắt buộc):
+                </label>
                 <input
                   type="text"
                   value={newRowT1}
@@ -1150,16 +1209,25 @@ function App() {
                   placeholder="Nhập T1"
                   style={{
                     width: "100%",
-                    padding: "8px",
-                    fontSize: "14px",
-                    border: "1px solid #ddd",
-                    borderRadius: "4px",
+                    padding: "12px",
+                    fontSize: "18px",
+                    border: "2px solid #ddd",
+                    borderRadius: "6px",
                   }}
                 />
               </div>
 
-              <div className="form-group" style={{ marginTop: "12px" }}>
-                <label>T2 (không bắt buộc):</label>
+              <div className="form-group" style={{ marginTop: "20px" }}>
+                <label
+                  style={{
+                    fontSize: "20px",
+                    fontWeight: "bold",
+                    marginBottom: "8px",
+                    display: "block",
+                  }}
+                >
+                  T2 (không bắt buộc):
+                </label>
                 <input
                   type="text"
                   value={newRowT2}
@@ -1167,10 +1235,10 @@ function App() {
                   placeholder="Nhập T2"
                   style={{
                     width: "100%",
-                    padding: "8px",
-                    fontSize: "14px",
-                    border: "1px solid #ddd",
-                    borderRadius: "4px",
+                    padding: "12px",
+                    fontSize: "18px",
+                    border: "2px solid #ddd",
+                    borderRadius: "6px",
                   }}
                 />
               </div>
@@ -1180,15 +1248,55 @@ function App() {
               <button
                 className="btn-cancel"
                 onClick={() => setShowAddRowModal(false)}
+                style={{ fontSize: "18px", padding: "12px 24px" }}
               >
                 Hủy
               </button>
               <button
                 className="btn-delete"
                 onClick={confirmAddRow}
-                style={{ background: "#28a745" }}
+                style={{
+                  background: "#28a745",
+                  fontSize: "18px",
+                  padding: "12px 24px",
+                }}
               >
                 Thêm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete First Row Confirmation Modal */}
+      {showDeleteFirstRowModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>⚠️ Xác nhận xóa dòng</h3>
+            </div>
+
+            <div className="modal-body">
+              <p
+                style={{
+                  fontSize: "18px",
+                  textAlign: "center",
+                  margin: "20px 0",
+                }}
+              >
+                Bạn có chắc chắn muốn xóa dòng đầu tiên hiện tại không?
+              </p>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowDeleteFirstRowModal(false)}
+              >
+                Hủy
+              </button>
+              <button className="btn-delete" onClick={handleDeleteFirstRow}>
+                Xác nhận
               </button>
             </div>
           </div>
