@@ -333,7 +333,7 @@ body {
   border: 2px solid #333;
   padding: 10px;
   text-align: center;
-  font-size: 20px;
+  font-size: 35px;
   font-weight: 500;
   transition: all 0.15s;
   background: #ffffff;
@@ -348,6 +348,8 @@ body {
 
 .data-cell.value-col {
   padding: 4px;
+  border-left: 3px solid red !important;
+  border-right: 3px solid red !important;
 }
 
 .data-cell.date-col {
@@ -820,4 +822,28 @@ body {
 
 .btn-delete:hover {
   background: #dc2626;
+}
+
+/* ========== MODAL LARGE TEXT ========== */
+.modal-header h3 {
+  font-size: 24px !important;
+}
+
+.modal-body label {
+  font-size: 18px !important;
+}
+
+.modal-body input {
+  font-size: 18px !important;
+  padding: 10px !important;
+}
+
+.form-group label {
+  font-size: 18px !important;
+}
+
+.btn-cancel,
+.btn-delete {
+  font-size: 18px !important;
+  padding: 12px 24px !important;
 }

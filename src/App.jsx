@@ -62,6 +62,9 @@ function App() {
   const [newRowT1, setNewRowT1] = useState("");
   const [newRowT2, setNewRowT2] = useState("");
 
+  // State cho keep last N rows
+  const [keepLastNRows, setKeepLastNRows] = useState("");
+
   // State cho purple range (tô màu tím)
   const [purpleRangeFrom, setPurpleRangeFrom] = useState(0);
   const [purpleRangeTo, setPurpleRangeTo] = useState(0);
@@ -475,6 +478,74 @@ function App() {
     );
   };
 
+  // Keep last N rows - hide all rows except last N rows with data
+  const handleKeepLastNRows = async () => {
+    const n = parseInt(keepLastNRows);
+
+    if (!n || n <= 0) {
+      alert("⚠️ Vui lòng nhập số dòng hợp lệ (> 0)");
+      return;
+    }
+
+    if (n > ROWS) {
+      alert(`⚠️ Số dòng không được vượt quá ${ROWS}`);
+      return;
+    }
+
+    // Find all rows with data
+    const rowsWithData = [];
+    for (let i = 0; i < ROWS; i++) {
+      if (dateValues[i] || allTValues[0][i] || allTValues[1][i]) {
+        rowsWithData.push(i);
+      }
+    }
+
+    if (rowsWithData.length === 0) {
+      alert("⚠️ Không có dòng nào có dữ liệu!");
+      return;
+    }
+
+    // Keep only last N rows
+    const rowsToKeep = rowsWithData.slice(-n);
+    const newDeletedRows = Array(ROWS).fill(false);
+
+    // Mark all rows as deleted except the last N rows
+    for (let i = 0; i < ROWS; i++) {
+      if (!rowsToKeep.includes(i)) {
+        newDeletedRows[i] = true;
+      }
+    }
+
+    setDeletedRows(newDeletedRows);
+
+    // Sync to all Q1-Q10
+    setSaveStatus("💾 Đang đồng bộ...");
+    const syncPromises = [];
+    for (let i = 1; i <= 10; i++) {
+      const qId = `q${i}`;
+      const result = await loadPageData(qId);
+      if (result.success && result.data) {
+        syncPromises.push(
+          savePageData(
+            qId,
+            result.data.t1Values,
+            result.data.t2Values,
+            dateValues,
+            newDeletedRows,
+            purpleRangeFrom,
+            purpleRangeTo
+          )
+        );
+      }
+    }
+
+    await Promise.all(syncPromises);
+    setSaveStatus("✅ Đã giữ " + n + " dòng cuối và đồng bộ");
+    setTimeout(() => setSaveStatus(""), 2000);
+
+    alert(`✅ Đã xóa các dòng cũ, giữ lại ${n} dòng cuối cùng!`);
+  };
+
   const clearData = () => {
     setShowDeleteModal(true);
   };
@@ -564,7 +635,7 @@ function App() {
 
         if (result.success) {
           setSaveStatus("✅ Đã lưu dữ liệu thành công");
-          alert(`✅ Đã ẩn ${deleteCount} dòng (đồng bộ Q1-Q10)!`);
+          alert(`✅ Đã xóa ${deleteCount} dòng (đồng bộ Q1-Q10)!`);
         } else {
           setSaveStatus("⚠️ Lỗi: " + result.error);
         }
@@ -629,7 +700,7 @@ function App() {
         if (result.success) {
           setSaveStatus("✅ Đã lưu dữ liệu thành công");
           alert(
-            `✅ Đã ẩn ${deletedCount} dòng từ ${deleteDateFrom} đến ${deleteDateTo} (đồng bộ Q1-Q10)!`
+            `✅ Đã xóa ${deletedCount} dòng từ ${deleteDateFrom} đến ${deleteDateTo} (đồng bộ Q1-Q10)!`
           );
         } else {
           setSaveStatus("⚠️ Lỗi: " + result.error);
@@ -675,12 +746,33 @@ function App() {
             <button
               onClick={handleAddRow}
               className="toolbar-button success"
-              style={{ marginLeft: "8px" }}
+              style={{ marginLeft: "8px", marginRight: "18px" }}
             >
               ➕ Thêm
             </button>
           </div>
 
+          {/* Action Buttons */}
+          <div className="toolbar-group">
+            <button
+              onClick={handleInputAllQ}
+              className="toolbar-button primary"
+            >
+              📥 Nhập dữ liệu toàn bộ Q
+            </button>
+            <button onClick={clearColumnHighlights} className="toolbar-button">
+              🔄 Xóa màu dòng cột khi click vào cột thông
+            </button>
+            <button onClick={handleSaveData} className="toolbar-button success">
+              💾 Lưu dữ liệu
+            </button>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="toolbar-button danger"
+            >
+              🗑️ Xóa dữ liệu
+            </button>
+          </div>
           {/* Purple Range */}
           <div className="toolbar-group">
             <label>Khoảng báo màu:</label>
@@ -701,25 +793,32 @@ function App() {
             />
           </div>
 
-          {/* Action Buttons */}
-          <div className="toolbar-group">
+          {/* Keep Last N Rows */}
+          <div
+            className="toolbar-group"
+            style={{
+              border: "2px solid #007bff",
+              padding: "8px 12px",
+              borderRadius: "6px",
+              backgroundColor: "#f0f8ff",
+              marginRight: "12px",
+            }}
+          >
+            <label>Nhập số dòng tồn tại:</label>
+            <input
+              type="number"
+              value={keepLastNRows}
+              onChange={(e) => setKeepLastNRows(e.target.value)}
+              placeholder="VD:5"
+              className="toolbar-input-small"
+              min="1"
+              max={ROWS}
+            />
             <button
-              onClick={handleInputAllQ}
+              onClick={handleKeepLastNRows}
               className="toolbar-button primary"
             >
-              📥 Nhập dữ liệu toàn bộ Q
-            </button>
-            <button onClick={clearColumnHighlights} className="toolbar-button">
-              🔄 Xóa highlight
-            </button>
-            <button onClick={handleSaveData} className="toolbar-button success">
-              💾 Lưu dữ liệu
-            </button>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="toolbar-button danger"
-            >
-              🗑️ Xóa dữ liệu
+              ✓ Áp dụng
             </button>
           </div>
 
