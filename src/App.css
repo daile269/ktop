@@ -300,10 +300,10 @@ body {
   background: #f5f5f5 !important;
   border: 2px solid #333;
   padding: 10px;
-  font-weight: 600;
+  font-weight: 700;
   color: #555;
   text-align: center;
-  font-size: 13px;
+  font-size: 25px;
   position: sticky;
   top: 0;
   z-index: 11;
@@ -313,10 +313,10 @@ body {
   background: #fafafa !important;
   border: 2px solid #333;
   padding: 8px 10px;
-  font-weight: 600;
+  font-weight: 700;
   color: #666;
   text-align: center;
-  font-size: 12px;
+  font-size: 30px;
   min-width: 60px;
   position: sticky;
   top: 41px; /* Offset để nằm dưới group-header */
@@ -326,7 +326,7 @@ body {
 .col-header.fixed {
   background: #f0f0f0 !important;
   min-width: 60px;
-  font-size: 12px;
+  font-size: 30px;
 }
 
 .data-cell {
@@ -357,14 +357,14 @@ body {
   max-width: 120px;
   text-align: left;
   padding-left: 12px;
-  font-size: 18px;
+  font-size: 30px;
 }
 
 .grid-input {
   width: 100%;
   border: 1px solid #e0e0e0;
   padding: 6px 8px;
-  font-size: 20px;
+  font-size:35px;
   text-align: center;
   background: #ffffff;
   border-radius: 2px;

@@ -132,7 +132,7 @@ function InputPage() {
               <span style={{ color: "#28a745" }}>{saveStatus}</span>
             )}
             <a href="/q1" style={{ marginLeft: "10px" }}>
-              ← Quay lại Q1
+              ← Tra cứu
             </a>
           </div>
         </div>

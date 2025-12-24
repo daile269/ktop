@@ -72,6 +72,19 @@ function App() {
   // State cho deleted rows (đánh dấu row bị xóa)
   const [deletedRows, setDeletedRows] = useState(Array(ROWS).fill(false));
 
+  // Helper function to format date to Vietnamese
+  const formatDateToVietnamese = (dateString) => {
+    if (!dateString) return "";
+    const parts = dateString.split("-");
+    if (parts.length === 3) {
+      const year = parts[0];
+      const month = parts[1];
+      const day = parts[2];
+      return `ngày ${parseInt(day)} tháng ${parseInt(month)} năm ${year}`;
+    }
+    return dateString;
+  };
+
   // Load dữ liệu từ Firestore khi component mount
   useEffect(() => {
     const loadData = async () => {
@@ -775,7 +788,7 @@ function App() {
           </div>
           {/* Purple Range */}
           <div className="toolbar-group">
-            <label>Khoảng báo màu:</label>
+            <label>Báo màu:</label>
             <input
               type="number"
               value={purpleRangeFrom}
@@ -804,7 +817,7 @@ function App() {
               marginRight: "12px",
             }}
           >
-            <label>Nhập số dòng tồn tại:</label>
+            <label>Dòng tồn tại:</label>
             <input
               type="number"
               value={keepLastNRows}
@@ -1113,7 +1126,7 @@ function App() {
 
             <div className="modal-body">
               <div className="form-group">
-                <label>Chọn ngày:</label>
+                <label>Chọn ngày (ngày/tháng/năm):</label>
                 <input
                   type="date"
                   value={newRowDate}
