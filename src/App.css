@@ -317,7 +317,7 @@ body {
   color: #666;
   text-align: center;
   font-size: 30px;
-  min-width: 60px;
+  min-width: 100px; /* Tăng lên 100px để chứa đủ '3-10' */
   position: sticky;
   top: 41px; /* Offset để nằm dưới group-header */
   z-index: 9;
@@ -338,6 +338,7 @@ body {
   transition: all 0.15s;
   background: #ffffff;
   cursor: pointer; /* Cho biết có thể click */
+  white-space: nowrap; /* Ngăn xuống dòng */
 }
 
 .data-cell.fixed {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import "./TopToolbar.css";
 import {
@@ -73,6 +73,114 @@ function App() {
   // State cho delete first row modal
   const [showDeleteFirstRowModal, setShowDeleteFirstRowModal] = useState(false);
 
+  // State cho settings modal
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+
+  // State để lưu thông tin các Q có ô màu vàng
+  const [qPurpleInfo, setQPurpleInfo] = useState({}); // {q1: {hasPurple: true, cells: ['3-10', '4-9']}, ...}
+
+  // State cho Go To Table
+  const [goToTableNumber, setGoToTableNumber] = useState("");
+
+  // Refs for sync scrolling
+  const tableRefs = useRef([]);
+  const isScrollingRef = useRef(null);
+  const scrollTimeoutRef = useRef(null);
+
+  // Handle sync scroll
+  const handleSyncScroll = (e, index) => {
+    // Nếu đang scroll bởi bảng khác thì bỏ qua
+    if (isScrollingRef.current !== null && isScrollingRef.current !== index) {
+      return;
+    }
+
+    // Đánh dấu bảng này đang chủ động scroll
+    isScrollingRef.current = index;
+
+    const { scrollTop } = e.target;
+
+    tableRefs.current.forEach((ref, i) => {
+      if (ref && i !== index) {
+        // Chỉ cập nhật nếu có sự thay đổi để tránh repaint không cần thiết
+        if (Math.abs(ref.scrollTop - scrollTop) > 1) {
+          ref.scrollTop = scrollTop;
+        }
+      }
+    });
+
+    // Reset cờ khi ngừng scroll
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      isScrollingRef.current = null;
+    }, 50);
+  };
+
+  // Lấy thông tin các ô màu vàng trong Q hiện tại
+  const getPurpleCellsInfo = () => {
+    const purpleCells = {};
+
+    allTableData.forEach((tableData, tableIndex) => {
+      const tablePurpleCells = [];
+
+      tableData.forEach((row, rowIndex) => {
+        // Skip deleted rows
+        if (deletedRows[rowIndex]) return;
+
+        row.forEach((cell, colIndex) => {
+          if (cell.color === "purple") {
+            tablePurpleCells.push(cell.value);
+          }
+        });
+      });
+
+      if (tablePurpleCells.length > 0) {
+        purpleCells[`T${tableIndex + 1}`] = tablePurpleCells;
+      }
+    });
+
+    return purpleCells;
+  };
+
+  // Format purple cells info thành string để hiển thị
+  const formatPurpleCellsInfo = () => {
+    const purpleCells = getPurpleCellsInfo();
+    const entries = Object.entries(purpleCells);
+
+    if (entries.length === 0) {
+      return "Không có bảng nào được báo màu";
+    }
+
+    // Chỉ hiển thị tên các bảng T, không hiển thị chi tiết ô
+    const tableNames = entries.map(([table]) => table);
+    return tableNames.join(", ");
+  };
+
+  // Handle Go To Table
+  const handleGoToTable = () => {
+    const tableNum = parseInt(goToTableNumber);
+
+    if (isNaN(tableNum) || tableNum < 1 || tableNum > TOTAL_TABLES) {
+      alert(`⚠️ Vui lòng nhập số từ 1 đến ${TOTAL_TABLES}`);
+      return;
+    }
+
+    // Tìm element của bảng T
+    const tableIndex = tableNum - 1;
+    const tableElement =
+      document.querySelectorAll(".table-section")[tableIndex];
+
+    if (tableElement) {
+      tableElement.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+        inline: "start",
+      });
+      setGoToTableNumber(""); // Reset input
+    } else {
+      alert(`⚠️ Không tìm thấy bảng T${tableNum}`);
+    }
+  };
+
   // Helper function to format date to Vietnamese
   const formatDateToVietnamese = (dateString) => {
     if (!dateString) return "";
@@ -144,6 +252,37 @@ function App() {
       generateTableWithValues(allTValues);
     }
   }, [dateValues, purpleRangeFrom, purpleRangeTo]);
+
+  // Load purple info cho tất cả Q1-Q10
+  useEffect(() => {
+    const loadAllQPurpleInfo = async () => {
+      const info = {};
+
+      for (let i = 1; i <= 10; i++) {
+        const qId = `q${i}`;
+        const result = await loadPageData(qId);
+
+        if (result.success && result.data) {
+          const { purpleRangeFrom: from, purpleRangeTo: to } = result.data;
+
+          // Kiểm tra xem Q này có purple range không
+          if (from && to && parseInt(from) > 0 && parseInt(to) > 0) {
+            info[qId] = {
+              hasPurple: true,
+              from: parseInt(from),
+              to: parseInt(to),
+              range: `${from}-${to}`,
+            };
+          }
+        }
+      }
+
+      setQPurpleInfo(info);
+    };
+
+    // Load khi component mount và khi purpleRange của Q hiện tại thay đổi
+    loadAllQPurpleInfo();
+  }, [purpleRangeFrom, purpleRangeTo, pageId]);
 
   // Thuật toán sinh bảng (dùng chung cho cả 2 toa)
   const generateTableData = (tValues, toaName) => {
@@ -228,8 +367,14 @@ function App() {
           y = 1;
         }
 
-        // Nếu y > 8 thì reset về 1
-        if (y > 8) {
+        // Xác định giới hạn đếm của y (mặc định 8 nếu không nhập 'Đến')
+        const limitY =
+          purpleRangeTo && parseInt(purpleRangeTo) > 0
+            ? parseInt(purpleRangeTo)
+            : 8;
+
+        // Nếu y > limitY thì reset về 1
+        if (y > limitY) {
           y = 1;
         }
       }
@@ -750,11 +895,26 @@ function App() {
               }}
               className="toolbar-select"
             >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                <option key={num} value={`q${num}`}>
-                  Q{num}
-                </option>
-              ))}
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
+                const qId = `q${num}`;
+                const hasPurple = qPurpleInfo[qId]?.hasPurple;
+                const range = qPurpleInfo[qId]?.range;
+
+                return (
+                  <option
+                    key={num}
+                    value={qId}
+                    style={{
+                      backgroundColor: hasPurple ? "#f8c507bd" : "transparent",
+                      fontWeight: hasPurple ? "bold" : "normal",
+                    }}
+                    title={hasPurple ? `Có báo màu: ${range}` : ""}
+                  >
+                    Q{num}
+                    {hasPurple ? ` ⚠️` : ""}
+                  </option>
+                );
+              })}
             </select>
             <button
               onClick={handleAddRow}
@@ -774,7 +934,7 @@ function App() {
               📥 Nhập dữ liệu toàn bộ Q
             </button>
             <button onClick={clearColumnHighlights} className="toolbar-button">
-              🔄 Xóa màu dòng cột khi click vào cột thông
+              🔄 Xóa màu dòng cột thông
             </button>
             <button onClick={handleSaveData} className="toolbar-button success">
               💾 Lưu dữ liệu
@@ -786,52 +946,75 @@ function App() {
               🗑️ Xóa dữ liệu
             </button>
           </div>
-          {/* Purple Range */}
+          {/* Settings Button */}
           <div className="toolbar-group">
-            <label>Báo màu:</label>
-            <input
-              type="number"
-              value={purpleRangeFrom}
-              onChange={(e) => setPurpleRangeFrom(e.target.value)}
-              placeholder="Từ"
-              className="toolbar-input-small"
-            />
-            <span>đến</span>
-            <input
-              type="number"
-              value={purpleRangeTo}
-              onChange={(e) => setPurpleRangeTo(e.target.value)}
-              placeholder="Đến"
-              className="toolbar-input-small"
-            />
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="toolbar-button"
+              style={{
+                fontSize: "20px",
+                padding: "6px 12px",
+                cursor: "pointer",
+              }}
+              title="Cài đặt"
+            >
+              ⚙️
+            </button>
           </div>
 
-          {/* Keep Last N Rows */}
-          <div
-            className="toolbar-group"
-            style={{
-              border: "2px solid #007bff",
-              padding: "8px 12px",
-              borderRadius: "6px",
-              backgroundColor: "#f0f8ff",
-              marginRight: "12px",
-            }}
-          >
-            <label>Dòng tồn tại:</label>
+          {/* Purple Cells Info Display */}
+          {allTableData.length > 0 && (
+            <div
+              style={{
+                marginLeft: "12px",
+                padding: "8px 16px",
+                backgroundColor: "#fff3cd",
+                border: "2px solid #ffc107",
+                borderRadius: "6px",
+                fontSize: "30px",
+                fontWeight: "bold",
+                maxWidth: "1100px",
+                overflow: "auto",
+                whiteSpace: "nowrap",
+              }}
+              title="Các ô đang được báo màu vàng trong Q này"
+            >
+              📍Các thông có báo màu: {formatPurpleCellsInfo()}
+            </div>
+          )}
+
+          {/* Go To Table */}
+          <div className="toolbar-group" style={{ marginLeft: "12px" }}>
+            <label style={{ fontSize: "18px", fontWeight: "bold" }}>
+              Đi đến Thông:
+            </label>
             <input
               type="number"
-              value={keepLastNRows}
-              onChange={(e) => setKeepLastNRows(e.target.value)}
-              placeholder="VD:5"
-              className="toolbar-input-small"
+              value={goToTableNumber}
+              onChange={(e) => setGoToTableNumber(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  handleGoToTable();
+                }
+              }}
+              placeholder="1-60"
               min="1"
-              max={ROWS}
+              max={TOTAL_TABLES}
+              style={{
+                width: "80px",
+                padding: "8px",
+                fontSize: "18px",
+                border: "2px solid #007bff",
+                borderRadius: "4px",
+                textAlign: "center",
+              }}
             />
             <button
-              onClick={handleKeepLastNRows}
+              onClick={handleGoToTable}
               className="toolbar-button primary"
+              style={{ fontSize: "18px", padding: "8px 16px" }}
             >
-              ✓ Áp dụng
+              ➡️ Đi
             </button>
           </div>
 
@@ -863,7 +1046,11 @@ function App() {
           {allTableData.map((tableData, tableIndex) => (
             <div key={tableIndex} className="table-section">
               <h4 className="table-title">T{tableIndex + 1}</h4>
-              <div className="data-grid-wrapper">
+              <div
+                className="data-grid-wrapper"
+                ref={(el) => (tableRefs.current[tableIndex] = el)}
+                onScroll={(e) => handleSyncScroll(e, tableIndex)}
+              >
                 {tableData.length > 0 ? (
                   <table className="data-grid">
                     <thead>
@@ -1297,6 +1484,106 @@ function App() {
               </button>
               <button className="btn-delete" onClick={handleDeleteFirstRow}>
                 Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowSettingsModal(false)}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "500px" }}
+          >
+            <div className="modal-header">
+              <h3>⚙️ Cài đặt</h3>
+            </div>
+
+            <div className="modal-body">
+              {/* Purple Range */}
+              <div className="form-group" style={{ marginBottom: "20px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Báo màu (từ - đến):
+                </label>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
+                >
+                  <input
+                    type="number"
+                    value={purpleRangeFrom}
+                    onChange={(e) => setPurpleRangeFrom(e.target.value)}
+                    placeholder="Từ"
+                    className="toolbar-input-small"
+                    style={{ flex: 1, padding: "8px", fontSize: "16px" }}
+                  />
+                  <span>đến</span>
+                  <input
+                    type="number"
+                    value={purpleRangeTo}
+                    onChange={(e) => setPurpleRangeTo(e.target.value)}
+                    placeholder="Đến"
+                    className="toolbar-input-small"
+                    style={{ flex: 1, padding: "8px", fontSize: "16px" }}
+                  />
+                </div>
+              </div>
+
+              {/* Keep Last N Rows */}
+              <div className="form-group">
+                <label
+                  style={{
+                    display: "block",
+                    marginBottom: "8px",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Dòng tồn tại:
+                </label>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
+                >
+                  <input
+                    type="number"
+                    value={keepLastNRows}
+                    onChange={(e) => setKeepLastNRows(e.target.value)}
+                    placeholder="VD: 5"
+                    className="toolbar-input-small"
+                    min="1"
+                    max={ROWS}
+                    style={{ flex: 1, padding: "8px", fontSize: "16px" }}
+                  />
+                  <button
+                    onClick={() => {
+                      handleKeepLastNRows();
+                      setShowSettingsModal(false);
+                    }}
+                    className="toolbar-button primary"
+                    style={{ padding: "8px 16px", fontSize: "16px" }}
+                  >
+                    ✓ Áp dụng
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowSettingsModal(false)}
+                style={{ fontSize: "16px", padding: "8px 16px" }}
+              >
+                Đóng
               </button>
             </div>
           </div>
