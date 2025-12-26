@@ -339,18 +339,21 @@ function App() {
         let color = "white";
         let shouldResetY = false;
 
-        // Logic tô đỏ: Nếu cột hiện tại = T của hàng này
-        if (col === tColumnForThisRow && tColumnForThisRow !== -1) {
+        // Kiểm tra xem có phải ô đỏ không
+        const isRed = col === tColumnForThisRow && tColumnForThisRow !== -1;
+
+        // Kiểm tra xem có nằm trong purple range không
+        const isPurple =
+          currentY >= purpleRangeFrom && currentY <= purpleRangeTo;
+
+        // Xác định màu cuối cùng
+        if (isRed && isPurple) {
+          color = "purple-red"; // Vừa đỏ vừa vàng: background vàng, chữ đỏ
+          shouldResetY = true;
+        } else if (isRed) {
           color = "red";
           shouldResetY = true;
-        }
-
-        // Kiểm tra điều kiện tô màu tím (trong range)
-        if (
-          color === "white" &&
-          currentY >= purpleRangeFrom &&
-          currentY <= purpleRangeTo
-        ) {
+        } else if (isPurple) {
           color = "purple";
         }
 
@@ -362,19 +365,8 @@ function App() {
         // Tăng y cho ô tiếp theo
         y++;
 
-        // Nếu vừa tô đỏ, reset y về 1
+        // Chỉ reset y về 1 khi tô đỏ
         if (shouldResetY) {
-          y = 1;
-        }
-
-        // Xác định giới hạn đếm của y (mặc định 8 nếu không nhập 'Đến')
-        const limitY =
-          purpleRangeTo && parseInt(purpleRangeTo) > 0
-            ? parseInt(purpleRangeTo)
-            : 8;
-
-        // Nếu y > limitY thì reset về 1
-        if (y > limitY) {
           y = 1;
         }
       }
@@ -1045,7 +1037,6 @@ function App() {
         <div className="tables-container">
           {allTableData.map((tableData, tableIndex) => (
             <div key={tableIndex} className="table-section">
-              <h4 className="table-title">T{tableIndex + 1}</h4>
               <div
                 className="data-grid-wrapper"
                 ref={(el) => (tableRefs.current[tableIndex] = el)}
@@ -1059,7 +1050,7 @@ function App() {
                           Thông tin
                         </th>
                         <th colSpan="1" className="group-header">
-                          Thông số
+                          Thông {tableIndex + 1}
                         </th>
                         <th colSpan="10" className="group-header">
                           Tham số

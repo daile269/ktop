@@ -274,6 +274,7 @@ body {
   overflow: auto;
   background: #fafafa;
   max-height: 500px; /* Giới hạn chiều cao để có scroll */
+  padding-bottom: 50px; /* Thêm padding để không bị cắt phần cuối */
 }
 
 .data-grid {
@@ -317,7 +318,7 @@ body {
   color: #666;
   text-align: center;
   font-size: 30px;
-  min-width: 100px; /* Tăng lên 100px để chứa đủ '3-10' */
+  min-width: 120px; /* Tăng lên 120px để chứa đủ giá trị 3 chữ số như '3-100' */
   position: sticky;
   top: 41px; /* Offset để nằm dưới group-header */
   z-index: 9;
@@ -409,7 +410,19 @@ body {
 
 .data-cell.purple:hover {
   background: #ccbc7a;
-  }
+}
+
+/* Ô vừa đỏ vừa vàng: background vàng, chữ đỏ */
+.data-cell.purple-red {
+  background: #f8c507bd;
+  color: red;
+  font-weight: 700;
+}
+
+.data-cell.purple-red:hover {
+  background: #ccbc7a;
+  color: #dc2626;
+}
 
 /* Highlight cells và rows */
 .data-cell.highlighted-cell {
@@ -463,6 +476,13 @@ body {
 .data-cell.purple.highlighted-row,
 .data-cell.purple.highlighted-column {
   background: #ccbc7a !important; /* Giống hover */
+}
+
+/* Ô PURPLE-RED khi highlight */
+.data-cell.purple-red.highlighted-row,
+.data-cell.purple-red.highlighted-column {
+  background: #ccbc7a !important;
+  color: #dc2626 !important;
 }
 
 /* Fixed cells trắng khi highlight */
