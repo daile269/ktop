@@ -123,17 +123,31 @@ function InputPage() {
             marginBottom: "20px",
           }}
         >
-          <h2>Nhập T1, T2 cho Q1-Q10</h2>
+          <h2 style={{ fontSize: "30px" }}>Nhập T1, T2 cho Q1-Q10</h2>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <button className="toolbar-btn" onClick={handleSave}>
+            <button
+              className="toolbar-btn"
+              onClick={handleSave}
+              style={{ fontSize: "20px" }}
+            >
               Lưu dữ liệu
             </button>
             {saveStatus && (
               <span style={{ color: "#28a745" }}>{saveStatus}</span>
             )}
-            <a href="/q1" style={{ marginLeft: "10px" }}>
-              ← Tra cứu
-            </a>
+            <button
+              className="toolbar-btn"
+              onClick={() => (window.location.href = "/q1")}
+              style={{
+                marginLeft: "10px",
+                background: "#28a745",
+                color: "white",
+                fontSize: "20px",
+                border: "none",
+              }}
+            >
+              🔍 Tra cứu
+            </button>
           </div>
         </div>
 
@@ -148,35 +162,35 @@ function InputPage() {
             marginBottom: "20px",
           }}
         >
-          <label style={{ fontSize: "14px", fontWeight: "600", color: "#555" }}>
+          <label style={{ fontSize: "30px", fontWeight: "600", color: "#555" }}>
             Nhập khoảng số muốn báo màu:
           </label>
           <input
             type="number"
-            min="1"
-            max="100"
+            min="0"
+            max="1000"
             value={purpleRangeFrom}
             onChange={(e) => setPurpleRangeFrom(parseInt(e.target.value) || 0)}
             style={{
-              width: "50px",
+              width: "100px",
               padding: "4px 8px",
-              fontSize: "20px",
+              fontSize: "30px",
               border: "1px solid #ddd",
               borderRadius: "4px",
               textAlign: "center",
             }}
           />
-          <span style={{ fontSize: "20px", color: "#666" }}>đến</span>
+          <span style={{ fontSize: "30px", color: "#666" }}>đến</span>
           <input
             type="number"
-            min="1"
-            max="100"
+            min="0"
+            max="1000"
             value={purpleRangeTo}
             onChange={(e) => setPurpleRangeTo(parseInt(e.target.value) || 0)}
             style={{
-              width: "50px",
+              width: "100px",
               padding: "4px 8px",
-              fontSize: "20px",
+              fontSize: "30px",
               border: "1px solid #ddd",
               borderRadius: "4px",
               textAlign: "center",

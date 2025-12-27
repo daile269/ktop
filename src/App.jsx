@@ -59,6 +59,7 @@ function App() {
   const [newRowDate, setNewRowDate] = useState("");
   const [newRowT1, setNewRowT1] = useState("");
   const [newRowT2, setNewRowT2] = useState("");
+  const [isAddingRow, setIsAddingRow] = useState(false);
 
   // State cho keep last N rows
   const [keepLastNRows, setKeepLastNRows] = useState("");
@@ -78,6 +79,12 @@ function App() {
 
   // State để lưu thông tin các Q có ô màu vàng
   const [qPurpleInfo, setQPurpleInfo] = useState({}); // {q1: {hasPurple: true, cells: ['3-10', '4-9']}, ...}
+
+  // State để lưu các Q đã xem (đã click vào khi có báo màu)
+  const [viewedQs, setViewedQs] = useState(() => {
+    const saved = localStorage.getItem("viewedQs");
+    return saved ? JSON.parse(saved) : {};
+  });
 
   // State cho Go To Table
   const [goToTableNumber, setGoToTableNumber] = useState("");
@@ -115,23 +122,35 @@ function App() {
     }, 50);
   };
 
-  // Lấy thông tin các ô màu vàng trong Q hiện tại
+  // Lấy thông tin các ô màu vàng trong Q hiện tại (chỉ hàng dưới cùng)
   const getPurpleCellsInfo = () => {
     const purpleCells = {};
 
+    // Tìm hàng dưới cùng (hàng mới nhất có dữ liệu)
+    let lastRowIndex = -1;
+    for (let i = dateValues.length - 1; i >= 0; i--) {
+      if (!deletedRows[i] && dateValues[i]) {
+        lastRowIndex = i;
+        break;
+      }
+    }
+
+    // Nếu không có hàng nào, return empty
+    if (lastRowIndex === -1) {
+      return purpleCells;
+    }
+
+    // Chỉ kiểm tra hàng dưới cùng
     allTableData.forEach((tableData, tableIndex) => {
       const tablePurpleCells = [];
 
-      tableData.forEach((row, rowIndex) => {
-        // Skip deleted rows
-        if (deletedRows[rowIndex]) return;
-
-        row.forEach((cell, colIndex) => {
-          if (cell.color === "purple") {
+      if (tableData[lastRowIndex]) {
+        tableData[lastRowIndex].forEach((cell, colIndex) => {
+          if (cell.color === "purple" || cell.color === "purple-red") {
             tablePurpleCells.push(cell.value);
           }
         });
-      });
+      }
 
       if (tablePurpleCells.length > 0) {
         purpleCells[`T${tableIndex + 1}`] = tablePurpleCells;
@@ -179,6 +198,12 @@ function App() {
     } else {
       alert(`⚠️ Không tìm thấy bảng T${tableNum}`);
     }
+  };
+
+  // Reset tất cả trạng thái "đã xem" (gọi khi thêm hàng mới)
+  const resetViewedQs = () => {
+    setViewedQs({});
+    localStorage.setItem("viewedQs", JSON.stringify({}));
   };
 
   // Helper function to format date to Vietnamese
@@ -253,6 +278,15 @@ function App() {
     }
   }, [dateValues, purpleRangeFrom, purpleRangeTo]);
 
+  // Đánh dấu Q hiện tại là đã xem khi có báo màu
+  useEffect(() => {
+    if (qPurpleInfo[pageId]?.hasPurple && !viewedQs[pageId]) {
+      const newViewedQs = { ...viewedQs, [pageId]: true };
+      setViewedQs(newViewedQs);
+      localStorage.setItem("viewedQs", JSON.stringify(newViewedQs));
+    }
+  }, [pageId, qPurpleInfo]);
+
   // Load purple info cho tất cả Q1-Q10
   useEffect(() => {
     const loadAllQPurpleInfo = async () => {
@@ -263,16 +297,79 @@ function App() {
         const result = await loadPageData(qId);
 
         if (result.success && result.data) {
-          const { purpleRangeFrom: from, purpleRangeTo: to } = result.data;
+          const {
+            purpleRangeFrom: from,
+            purpleRangeTo: to,
+            dateValues,
+            deletedRows,
+            t1Values,
+            t2Values,
+          } = result.data;
 
           // Kiểm tra xem Q này có purple range không
           if (from && to && parseInt(from) > 0 && parseInt(to) > 0) {
-            info[qId] = {
-              hasPurple: true,
-              from: parseInt(from),
-              to: parseInt(to),
-              range: `${from}-${to}`,
-            };
+            const purpleFrom = parseInt(from);
+            const purpleTo = parseInt(to);
+
+            // Tìm hàng dưới cùng (hàng mới nhất có dữ liệu)
+            let lastRowIndex = -1;
+            for (let rowIdx = dateValues.length - 1; rowIdx >= 0; rowIdx--) {
+              if (!deletedRows[rowIdx] && dateValues[rowIdx]) {
+                lastRowIndex = rowIdx;
+                break;
+              }
+            }
+
+            // Kiểm tra xem hàng dưới cùng có ô purple không
+            let hasLastRowPurple = false;
+            if (lastRowIndex !== -1 && t1Values && t2Values) {
+              // Tính y counter cho từng cột ở hàng dưới cùng
+              for (let col = 0; col < 10; col++) {
+                let y = 1;
+
+                // Tính y từ đầu đến hàng cuối
+                for (let row = 0; row <= lastRowIndex; row++) {
+                  if (deletedRows[row]) continue;
+
+                  const currentY = y;
+
+                  // Lấy giá trị T của hàng này
+                  const tValue = (col < 5 ? t1Values : t2Values)?.[row];
+                  const tCol = tValue ? parseInt(tValue) : -1;
+
+                  // Nếu đây là hàng cuối, kiểm tra y có trong purple range không
+                  if (row === lastRowIndex) {
+                    if (
+                      currentY >= purpleFrom &&
+                      currentY <= purpleTo &&
+                      col !== tCol
+                    ) {
+                      hasLastRowPurple = true;
+                      break;
+                    }
+                  }
+
+                  // Tăng y
+                  y++;
+
+                  // Reset y nếu gặp ô đỏ
+                  if (col === tCol && tCol !== -1) {
+                    y = 1;
+                  }
+                }
+
+                if (hasLastRowPurple) break;
+              }
+            }
+
+            if (hasLastRowPurple) {
+              info[qId] = {
+                hasPurple: true,
+                from: purpleFrom,
+                to: purpleTo,
+                range: `${from}-${to}`,
+              };
+            }
           }
         }
       }
@@ -559,6 +656,8 @@ function App() {
       return;
     }
 
+    setIsAddingRow(true);
+
     // Find the last non-empty row
     let lastRowIndex = -1;
     for (let i = ROWS - 1; i >= 0; i--) {
@@ -621,12 +720,19 @@ function App() {
 
     await Promise.all(syncPromises);
     setSaveStatus("✅ Đã thêm hàng mới và đồng bộ");
-    setTimeout(() => setSaveStatus(""), 2000);
+
+    // Reset tất cả trạng thái "đã xem" khi thêm hàng mới
+    resetViewedQs();
 
     setShowAddRowModal(false);
+    setIsAddingRow(false);
+
     alert(
       `✅ Đã thêm hàng mới với ngày ${newRowDate} tại vị trí ${newRowIndex + 1}`
     );
+
+    // Refresh trang để load lại effect
+    window.location.reload();
   };
 
   // Keep last N rows - hide all rows except last N rows with data
@@ -877,48 +983,74 @@ function App() {
       {/* Top Toolbar - Chứa tất cả controls */}
       <div className="top-toolbar">
         <div className="toolbar-section">
-          {/* Page Selector */}
-          <div className="toolbar-group">
-            <label>Q:</label>
-            <select
-              value={pageId}
-              onChange={(e) => {
-                window.location.pathname = `/${e.target.value}`;
-              }}
-              className="toolbar-select"
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
-                const qId = `q${num}`;
-                const hasPurple = qPurpleInfo[qId]?.hasPurple;
-                const range = qPurpleInfo[qId]?.range;
+          {/* Q Navigation Buttons */}
+          <div
+            className="toolbar-group"
+            style={{ display: "flex", gap: "8px", alignItems: "center" }}
+          >
+            <label style={{ fontSize: "35px", fontWeight: "bold" }}>Q:</label>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
+              const qId = `q${num}`;
+              const hasPurple = qPurpleInfo[qId]?.hasPurple;
+              const range = qPurpleInfo[qId]?.range;
+              const isActive = pageId === qId;
+              const isViewed = viewedQs[qId];
 
-                return (
-                  <option
-                    key={num}
-                    value={qId}
-                    style={{
-                      backgroundColor: hasPurple ? "#f8c507bd" : "transparent",
-                      fontWeight: hasPurple ? "bold" : "normal",
-                    }}
-                    title={hasPurple ? `Có báo màu: ${range}` : ""}
-                  >
-                    Q{num}
-                    {hasPurple ? ` ⚠️` : ""}
-                  </option>
-                );
-              })}
-            </select>
-            <button
-              onClick={handleAddRow}
-              className="toolbar-button success"
-              style={{ marginLeft: "8px", marginRight: "18px" }}
-            >
-              ➕ Thêm
-            </button>
+              // Xác định màu background
+              let bgColor = "transparent"; // Mặc định: trắng (không báo màu)
+              if (hasPurple && !isViewed) {
+                bgColor = "#f8c507bd"; // Vàng: có báo màu mới (chưa xem)
+              } else if (hasPurple && isViewed) {
+                bgColor = "#ff9800"; // Cam: báo màu đã xem
+              }
+
+              // Nếu đang active, ưu tiên màu xanh
+              if (isActive) {
+                bgColor = "#4a90e2";
+              }
+
+              return (
+                <button
+                  key={num}
+                  onClick={() => {
+                    window.location.pathname = `/${qId}`;
+                  }}
+                  className="toolbar-button"
+                  style={{
+                    backgroundColor: bgColor,
+                    color: isActive ? "white" : hasPurple ? "#333" : "#555",
+                    fontWeight: isActive || hasPurple ? "bold" : "normal",
+                    border: isActive
+                      ? "2px solid #357abd"
+                      : "1px solid #d0d0d0",
+                    padding: "6px 12px",
+                    fontSize: "35px",
+                    minWidth: "50px",
+                  }}
+                  title={
+                    hasPurple
+                      ? isViewed
+                        ? `Đã xem - Báo màu: ${range}`
+                        : `Mới - Báo màu: ${range}`
+                      : `Chuyển đến Q${num}`
+                  }
+                >
+                  Q{num}
+                  {hasPurple && !isViewed ? " ⚠️" : ""}
+                </button>
+              );
+            })}
           </div>
 
           {/* Action Buttons */}
           <div className="toolbar-group">
+            <button
+              onClick={handleAddRow}
+              className="toolbar-button success"
+              style={{ marginLeft: "10px", marginRight: "18px" }}
+            >
+              ➕ Thêm
+            </button>
             <button
               onClick={handleInputAllQ}
               className="toolbar-button primary"
@@ -1433,13 +1565,16 @@ function App() {
               <button
                 className="btn-delete"
                 onClick={confirmAddRow}
+                disabled={isAddingRow}
                 style={{
-                  background: "#28a745",
+                  background: isAddingRow ? "#6c757d" : "#28a745",
                   fontSize: "18px",
                   padding: "12px 24px",
+                  cursor: isAddingRow ? "not-allowed" : "pointer",
+                  opacity: isAddingRow ? 0.7 : 1,
                 }}
               >
-                Thêm
+                {isAddingRow ? "Đang thêm..." : "Thêm"}
               </button>
             </div>
           </div>
