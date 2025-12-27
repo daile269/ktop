@@ -879,7 +879,7 @@ function App() {
         <div className="toolbar-section">
           {/* Page Selector */}
           <div className="toolbar-group">
-            <label>QUYỂN:</label>
+            <label>Q:</label>
             <select
               value={pageId}
               onChange={(e) => {
@@ -971,7 +971,7 @@ function App() {
               }}
               title="Các ô đang được báo màu vàng trong Q này"
             >
-              📍Các thông có báo màu: {formatPurpleCellsInfo()}
+              📍Thông báo màu: {formatPurpleCellsInfo()}
             </div>
           )}
 
