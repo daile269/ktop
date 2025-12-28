@@ -278,6 +278,21 @@ function App() {
     }
   }, [dateValues, purpleRangeFrom, purpleRangeTo]);
 
+  // Auto scroll to bottom khi mở ứng dụng
+  useEffect(() => {
+    if (isDataLoaded && allTableData.length > 0) {
+      // Delay nhỏ để đảm bảo DOM đã render xong
+      setTimeout(() => {
+        // Scroll tất cả các bảng xuống cuối
+        tableRefs.current.forEach((ref) => {
+          if (ref) {
+            ref.scrollTop = ref.scrollHeight;
+          }
+        });
+      }, 100);
+    }
+  }, [isDataLoaded, allTableData]);
+
   // Đánh dấu Q hiện tại là đã xem khi có báo màu
   useEffect(() => {
     if (qPurpleInfo[pageId]?.hasPurple && !viewedQs[pageId]) {
@@ -983,6 +998,50 @@ function App() {
       {/* Top Toolbar - Chứa tất cả controls */}
       <div className="top-toolbar">
         <div className="toolbar-section">
+          {/* Action Buttons */}
+          <div className="toolbar-group">
+            <button
+              onClick={handleAddRow}
+              className="toolbar-button success"
+              style={{ marginLeft: "10px", marginRight: "18px" }}
+            >
+              ➕ Thêm
+            </button>
+            <button
+              onClick={handleInputAllQ}
+              className="toolbar-button primary"
+            >
+              📥 Nhập dữ liệu toàn bộ Q
+            </button>
+            <button onClick={clearColumnHighlights} className="toolbar-button">
+              🔄 Xóa màu dòng cột thông
+            </button>
+            <button onClick={handleSaveData} className="toolbar-button success">
+              💾 Lưu dữ liệu
+            </button>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="toolbar-button danger"
+            >
+              🗑️ Xóa dữ liệu
+            </button>
+            {/* Settings Button */}
+            <div className="toolbar-group">
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="toolbar-button"
+                style={{
+                  fontSize: "20px",
+                  padding: "8px 24px",
+                  cursor: "pointer",
+                }}
+                title="Cài đặt"
+              >
+                ⚙️ Cài đặt
+              </button>
+            </div>
+          </div>
+
           {/* Q Navigation Buttons */}
           <div
             className="toolbar-group"
@@ -999,9 +1058,9 @@ function App() {
               // Xác định màu background
               let bgColor = "transparent"; // Mặc định: trắng (không báo màu)
               if (hasPurple && !isViewed) {
-                bgColor = "#f8c507bd"; // Vàng: có báo màu mới (chưa xem)
+                bgColor = "#ff9800"; // cam: có báo màu mới (chưa xem)
               } else if (hasPurple && isViewed) {
-                bgColor = "#ff9800"; // Cam: báo màu đã xem
+                bgColor = "#f8c507bd"; // vàng: báo màu đã xem
               }
 
               // Nếu đang active, ưu tiên màu xanh
@@ -1036,54 +1095,10 @@ function App() {
                   }
                 >
                   Q{num}
-                  {hasPurple && !isViewed ? " ⚠️" : ""}
+                  {hasPurple && !isViewed ? " BM" : ""}
                 </button>
               );
             })}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="toolbar-group">
-            <button
-              onClick={handleAddRow}
-              className="toolbar-button success"
-              style={{ marginLeft: "10px", marginRight: "18px" }}
-            >
-              ➕ Thêm
-            </button>
-            <button
-              onClick={handleInputAllQ}
-              className="toolbar-button primary"
-            >
-              📥 Nhập dữ liệu toàn bộ Q
-            </button>
-            <button onClick={clearColumnHighlights} className="toolbar-button">
-              🔄 Xóa màu dòng cột thông
-            </button>
-            <button onClick={handleSaveData} className="toolbar-button success">
-              💾 Lưu dữ liệu
-            </button>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="toolbar-button danger"
-            >
-              🗑️ Xóa dữ liệu
-            </button>
-          </div>
-          {/* Settings Button */}
-          <div className="toolbar-group">
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="toolbar-button"
-              style={{
-                fontSize: "20px",
-                padding: "6px 12px",
-                cursor: "pointer",
-              }}
-              title="Cài đặt"
-            >
-              ⚙️
-            </button>
           </div>
 
           {/* Purple Cells Info Display */}
@@ -1103,7 +1118,7 @@ function App() {
               }}
               title="Các ô đang được báo màu vàng trong Q này"
             >
-              📍Thông báo màu: {formatPurpleCellsInfo()}
+              📍 Báo màu Q{pageId.replace("q", "")}: {formatPurpleCellsInfo()}
             </div>
           )}
 
@@ -1138,7 +1153,7 @@ function App() {
               className="toolbar-button primary"
               style={{ fontSize: "18px", padding: "8px 16px" }}
             >
-              ➡️ Đi
+              ➡️ Đến
             </button>
           </div>
 

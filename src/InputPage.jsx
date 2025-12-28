@@ -75,6 +75,33 @@ function InputPage() {
     loadData();
   }, []);
 
+  // Auto scroll to last row with data
+  useEffect(() => {
+    if (!isLoading && dateValues.length > 0) {
+      // Tìm dòng cuối cùng có dữ liệu
+      let lastRowWithData = -1;
+      for (let i = dateValues.length - 1; i >= 0; i--) {
+        if (!deletedRows[i] && dateValues[i]) {
+          lastRowWithData = i;
+          break;
+        }
+      }
+
+      if (lastRowWithData !== -1) {
+        // Delay nhỏ để đảm bảo DOM đã render
+        setTimeout(() => {
+          // Tìm row element và scroll đến đó
+          const rowElement = document.querySelector(
+            `tr:nth-child(${lastRowWithData + 2})`
+          ); // +2 vì có header row
+          if (rowElement) {
+            rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }, 300);
+      }
+    }
+  }, [isLoading, dateValues, deletedRows]);
+
   // Save data vào 10Q
   const handleSave = async () => {
     setSaveStatus("💾 Đang lưu...");
@@ -211,19 +238,74 @@ function InputPage() {
               <tr>
                 <th rowSpan="2">STT</th>
                 <th rowSpan="2">Ngày</th>
-                {Array.from({ length: 10 }, (_, qIndex) => (
-                  <th key={qIndex} colSpan="2">
-                    Q{qIndex + 1}
-                  </th>
-                ))}
+                {Array.from({ length: 10 }, (_, qIndex) => {
+                  // Màu background khác nhau cho mỗi Q
+                  const colors = [
+                    "#e3f2fd", // Q1 - xanh nhạt
+                    "#f3e5f5", // Q2 - tím nhạt
+                    "#fff3e0", // Q3 - cam nhạt
+                    "#e8f5e9", // Q4 - xanh lá nhạt
+                    "#fce4ec", // Q5 - hồng nhạt
+                    "#e0f2f1", // Q6 - xanh lơ nhạt
+                    "#fff9c4", // Q7 - vàng nhạt
+                    "#f1f8e9", // Q8 - xanh lá nhạt 2
+                    "#ede7f6", // Q9 - tím nhạt 2
+                    "#ffebee", // Q10 - đỏ nhạt
+                  ];
+
+                  return (
+                    <th
+                      key={qIndex}
+                      colSpan="2"
+                      style={{
+                        backgroundColor: colors[qIndex],
+                        borderLeft: "3px solid red",
+                        borderRight: "3px solid red",
+                      }}
+                    >
+                      Q{qIndex + 1}
+                    </th>
+                  );
+                })}
               </tr>
               <tr>
-                {Array.from({ length: 10 }, (_, qIndex) => (
-                  <>
-                    <th key={`t1-${qIndex}`}>T1</th>
-                    <th key={`t2-${qIndex}`}>T2</th>
-                  </>
-                ))}
+                {Array.from({ length: 10 }, (_, qIndex) => {
+                  const colors = [
+                    "#e3f2fd",
+                    "#f3e5f5",
+                    "#fff3e0",
+                    "#e8f5e9",
+                    "#fce4ec",
+                    "#e0f2f1",
+                    "#fff9c4",
+                    "#f1f8e9",
+                    "#ede7f6",
+                    "#ffebee",
+                  ];
+
+                  return (
+                    <>
+                      <th
+                        key={`t1-${qIndex}`}
+                        style={{
+                          backgroundColor: colors[qIndex],
+                          borderLeft: "3px solid red",
+                        }}
+                      >
+                        T1
+                      </th>
+                      <th
+                        key={`t2-${qIndex}`}
+                        style={{
+                          backgroundColor: colors[qIndex],
+                          borderRight: "3px solid red",
+                        }}
+                      >
+                        T2
+                      </th>
+                    </>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -246,36 +328,63 @@ function InputPage() {
                       />
                     </td>
 
-                    {Array.from({ length: 10 }, (_, qIndex) => (
-                      <>
-                        <td key={`t1-${qIndex}`}>
-                          <input
-                            type="text"
-                            className="cell-input small"
-                            value={allQData[qIndex].t1Values[rowIndex] || ""}
-                            onChange={(e) => {
-                              const newAllQData = [...allQData];
-                              newAllQData[qIndex].t1Values[rowIndex] =
-                                e.target.value;
-                              setAllQData(newAllQData);
+                    {Array.from({ length: 10 }, (_, qIndex) => {
+                      const colors = [
+                        "#e3f2fd",
+                        "#f3e5f5",
+                        "#fff3e0",
+                        "#e8f5e9",
+                        "#fce4ec",
+                        "#e0f2f1",
+                        "#fff9c4",
+                        "#f1f8e9",
+                        "#ede7f6",
+                        "#ffebee",
+                      ];
+
+                      return (
+                        <>
+                          <td
+                            key={`t1-${qIndex}`}
+                            style={{
+                              backgroundColor: colors[qIndex],
+                              borderLeft: "3px solid red",
                             }}
-                          />
-                        </td>
-                        <td key={`t2-${qIndex}`}>
-                          <input
-                            type="text"
-                            className="cell-input small"
-                            value={allQData[qIndex].t2Values[rowIndex] || ""}
-                            onChange={(e) => {
-                              const newAllQData = [...allQData];
-                              newAllQData[qIndex].t2Values[rowIndex] =
-                                e.target.value;
-                              setAllQData(newAllQData);
+                          >
+                            <input
+                              type="text"
+                              className="cell-input small"
+                              value={allQData[qIndex].t1Values[rowIndex] || ""}
+                              onChange={(e) => {
+                                const newAllQData = [...allQData];
+                                newAllQData[qIndex].t1Values[rowIndex] =
+                                  e.target.value;
+                                setAllQData(newAllQData);
+                              }}
+                            />
+                          </td>
+                          <td
+                            key={`t2-${qIndex}`}
+                            style={{
+                              backgroundColor: colors[qIndex],
+                              borderRight: "3px solid red",
                             }}
-                          />
-                        </td>
-                      </>
-                    ))}
+                          >
+                            <input
+                              type="text"
+                              className="cell-input small"
+                              value={allQData[qIndex].t2Values[rowIndex] || ""}
+                              onChange={(e) => {
+                                const newAllQData = [...allQData];
+                                newAllQData[qIndex].t2Values[rowIndex] =
+                                  e.target.value;
+                                setAllQData(newAllQData);
+                              }}
+                            />
+                          </td>
+                        </>
+                      );
+                    })}
                   </tr>
                 );
               })}
