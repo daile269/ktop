@@ -77,6 +77,9 @@ function App() {
   // State cho settings modal
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
+  // State cho keep last N rows confirmation modal
+  const [showKeepLastNRowsModal, setShowKeepLastNRowsModal] = useState(false);
+
   // State để lưu thông tin các Q có ô màu vàng
   const [qPurpleInfo, setQPurpleInfo] = useState({}); // {q1: {hasPurple: true, cells: ['3-10', '4-9']}, ...}
 
@@ -697,14 +700,17 @@ function App() {
     // Initialize new row with date
     const newDateValues = [...dateValues];
     const newAllTValues = [...allTValues];
+    const newDeletedRows = [...deletedRows];
 
     // Set date and T values for new row
     newDateValues[newRowIndex] = newRowDate;
     newAllTValues[0][newRowIndex] = newRowT1; // T1
     newAllTValues[1][newRowIndex] = newRowT2; // T2
+    newDeletedRows[newRowIndex] = false; // Đảm bảo dòng mới không bị đánh dấu deleted
 
     setDateValues(newDateValues);
     setAllTValues(newAllTValues);
+    setDeletedRows(newDeletedRows);
 
     // Sync to all Q1-Q10
     setSaveStatus("💾 Đang đồng bộ...");
@@ -725,7 +731,7 @@ function App() {
             qTValues,
             qT2Values,
             newDateValues,
-            result.data.deletedRows || [],
+            newDeletedRows, // Sync deletedRows mới
             purpleRangeFrom,
             purpleRangeTo
           )
@@ -742,9 +748,7 @@ function App() {
     setShowAddRowModal(false);
     setIsAddingRow(false);
 
-    alert(
-      `✅ Đã thêm hàng mới với ngày ${newRowDate} tại vị trí ${newRowIndex + 1}`
-    );
+    alert(`✅ Đã thêm hàng mới với ngày ${newRowDate}`);
 
     // Refresh trang để load lại effect
     window.location.reload();
@@ -1025,21 +1029,85 @@ function App() {
             >
               🗑️ Xóa dữ liệu
             </button>
-            {/* Settings Button */}
-            <div className="toolbar-group">
-              <button
-                onClick={() => setShowSettingsModal(true)}
-                className="toolbar-button"
-                style={{
-                  fontSize: "20px",
-                  padding: "8px 24px",
-                  cursor: "pointer",
-                }}
-                title="Cài đặt"
-              >
-                ⚙️ Cài đặt
-              </button>
-            </div>
+          </div>
+
+          {/* Báo màu Control */}
+          <div
+            className="toolbar-group"
+            style={{ display: "flex", alignItems: "center", gap: "8px" }}
+          >
+            <label style={{ fontSize: "32px", fontWeight: "bold" }}>
+              Báo màu:
+            </label>
+            <input
+              type="number"
+              value={purpleRangeFrom}
+              onChange={(e) => setPurpleRangeFrom(e.target.value)}
+              placeholder="Từ"
+              min="0"
+              style={{
+                width: "70px",
+                padding: "6px",
+                fontSize: "32px",
+                border: "2px solid #ffc107",
+                borderRadius: "4px",
+                textAlign: "center",
+              }}
+            />
+            <span style={{ fontSize: "32px" }}>đến</span>
+            <input
+              type="number"
+              value={purpleRangeTo}
+              onChange={(e) => setPurpleRangeTo(e.target.value)}
+              placeholder="Đến"
+              min="0"
+              style={{
+                width: "70px",
+                padding: "6px",
+                fontSize: "32px",
+                border: "2px solid #ffc107",
+                borderRadius: "4px",
+                textAlign: "center",
+              }}
+            />
+          </div>
+
+          {/* Dòng tồn tại Control */}
+          <div
+            className="toolbar-group"
+            style={{ display: "flex", alignItems: "center", gap: "8px" }}
+          >
+            <label style={{ fontSize: "18px", fontWeight: "bold" }}>
+              📊 Dòng tồn tại:
+            </label>
+            <input
+              type="number"
+              value={keepLastNRows}
+              onChange={(e) => setKeepLastNRows(e.target.value)}
+              min="1"
+              max={ROWS}
+              style={{
+                width: "70px",
+                padding: "6px",
+                fontSize: "18px",
+                border: "2px solid #007bff",
+                borderRadius: "4px",
+                textAlign: "center",
+              }}
+            />
+            <button
+              onClick={() => {
+                if (!keepLastNRows || keepLastNRows <= 0) {
+                  alert("⚠️ Vui lòng nhập số dòng hợp lệ!");
+                  return;
+                }
+                setShowKeepLastNRowsModal(true);
+              }}
+              className="toolbar-button primary"
+              style={{ fontSize: "16px", padding: "6px 12px" }}
+            >
+              ✓ Áp dụng
+            </button>
           </div>
 
           {/* Q Navigation Buttons */}
@@ -1095,7 +1163,11 @@ function App() {
                   }
                 >
                   Q{num}
-                  {hasPurple && !isViewed ? " BM" : ""}
+                  {hasPurple && !isViewed
+                    ? " BM"
+                    : hasPurple && isViewed
+                    ? " ĐX"
+                    : ""}
                 </button>
               );
             })}
@@ -1217,121 +1289,129 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {tableData.map((row, rowIndex) => {
-                        // Skip deleted rows
-                        if (deletedRows[rowIndex]) return null;
+                      {(() => {
+                        let displayRowNumber = 0;
+                        return tableData.map((row, rowIndex) => {
+                          // Skip deleted rows
+                          if (deletedRows[rowIndex]) return null;
 
-                        return (
-                          <tr key={rowIndex}>
-                            <td className="data-cell fixed">
-                              {String(rowIndex).padStart(2, "0")}
-                            </td>
-                            <td
-                              className="data-cell fixed date-col"
-                              colSpan="2"
-                            >
-                              <input
-                                type="date"
-                                className="date-input"
-                                value={dateValues[rowIndex] || ""}
-                                onChange={async (e) => {
-                                  const newDateValues = [...dateValues];
-                                  newDateValues[rowIndex] = e.target.value;
-                                  setDateValues(newDateValues);
+                          displayRowNumber++;
+                          return (
+                            <tr key={rowIndex}>
+                              <td className="data-cell fixed">
+                                {String(displayRowNumber).padStart(3, "0")}
+                              </td>
+                              <td
+                                className="data-cell fixed date-col"
+                                colSpan="2"
+                              >
+                                <input
+                                  type="date"
+                                  className="date-input"
+                                  value={dateValues[rowIndex] || ""}
+                                  onChange={async (e) => {
+                                    const newDateValues = [...dateValues];
+                                    newDateValues[rowIndex] = e.target.value;
+                                    setDateValues(newDateValues);
 
-                                  // Sync sang tất cả Q1-Q10
-                                  const syncPromises = [];
-                                  for (let i = 1; i <= 10; i++) {
-                                    const qId = `q${i}`;
-                                    // Load data hiện tại của Q này
-                                    const result = await loadPageData(qId);
-                                    if (result.success && result.data) {
-                                      // Update dateValues và save lại
-                                      syncPromises.push(
-                                        savePageData(
-                                          qId,
-                                          result.data.t1Values,
-                                          result.data.t2Values,
-                                          newDateValues,
-                                          result.data.deletedRows || [],
-                                          purpleRangeFrom,
-                                          purpleRangeTo
-                                        )
-                                      );
+                                    // Sync sang tất cả Q1-Q10
+                                    const syncPromises = [];
+                                    for (let i = 1; i <= 10; i++) {
+                                      const qId = `q${i}`;
+                                      // Load data hiện tại của Q này
+                                      const result = await loadPageData(qId);
+                                      if (result.success && result.data) {
+                                        // Update dateValues và save lại
+                                        syncPromises.push(
+                                          savePageData(
+                                            qId,
+                                            result.data.t1Values,
+                                            result.data.t2Values,
+                                            newDateValues,
+                                            result.data.deletedRows || [],
+                                            purpleRangeFrom,
+                                            purpleRangeTo
+                                          )
+                                        );
+                                      }
                                     }
-                                  }
-                                  await Promise.all(syncPromises);
-                                }}
-                                style={{
-                                  width: "100%",
-                                  border: "none",
-                                  background: "transparent",
-                                  fontSize: "20px",
-                                  padding: "4px",
-                                }}
-                              />
-                            </td>
-                            <td
-                              className={`data-cell fixed value-col ${
-                                highlightedTColumns[tableIndex]
-                                  ? "highlighted-column"
-                                  : ""
-                              } ${
-                                highlightedRows[tableIndex]?.[rowIndex]
-                                  ? "highlighted-row"
-                                  : ""
-                              }`}
-                              onClick={() => handleTColumnClick(tableIndex)}
-                              onDoubleClick={() =>
-                                handleCellDoubleClick(tableIndex, rowIndex, -1)
-                              }
-                            >
-                              <input
-                                type="text"
-                                className="grid-input"
-                                value={allTValues[tableIndex][rowIndex]}
-                                onChange={(e) =>
-                                  handleTValueChange(
+                                    await Promise.all(syncPromises);
+                                  }}
+                                  style={{
+                                    width: "100%",
+                                    border: "none",
+                                    background: "transparent",
+                                    fontSize: "20px",
+                                    padding: "4px",
+                                  }}
+                                />
+                              </td>
+                              <td
+                                className={`data-cell fixed value-col ${
+                                  highlightedTColumns[tableIndex]
+                                    ? "highlighted-column"
+                                    : ""
+                                } ${
+                                  highlightedRows[tableIndex]?.[rowIndex]
+                                    ? "highlighted-row"
+                                    : ""
+                                }`}
+                                onClick={() => handleTColumnClick(tableIndex)}
+                                onDoubleClick={() =>
+                                  handleCellDoubleClick(
                                     tableIndex,
                                     rowIndex,
-                                    e.target.value
+                                    -1
                                   )
                                 }
-                                disabled={tableIndex >= 2}
-                              />
-                            </td>
-                            {row.map((cell, colIndex) => {
-                              const isRowHighlighted =
-                                highlightedRows[tableIndex]?.[rowIndex];
+                              >
+                                <input
+                                  type="text"
+                                  className="grid-input"
+                                  value={allTValues[tableIndex][rowIndex]}
+                                  onChange={(e) =>
+                                    handleTValueChange(
+                                      tableIndex,
+                                      rowIndex,
+                                      e.target.value
+                                    )
+                                  }
+                                  disabled={tableIndex >= 2}
+                                />
+                              </td>
+                              {row.map((cell, colIndex) => {
+                                const isRowHighlighted =
+                                  highlightedRows[tableIndex]?.[rowIndex];
 
-                              return (
-                                <td
-                                  key={colIndex}
-                                  className={`data-cell ${cell.color} ${
-                                    isRowHighlighted ? "highlighted-row" : ""
-                                  }`}
-                                  onClick={() =>
-                                    handleCellClick(
-                                      tableIndex,
-                                      rowIndex,
-                                      colIndex
-                                    )
-                                  }
-                                  onDoubleClick={() =>
-                                    handleCellDoubleClick(
-                                      tableIndex,
-                                      rowIndex,
-                                      colIndex
-                                    )
-                                  }
-                                >
-                                  {cell.value}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        );
-                      })}
+                                return (
+                                  <td
+                                    key={colIndex}
+                                    className={`data-cell ${cell.color} ${
+                                      isRowHighlighted ? "highlighted-row" : ""
+                                    }`}
+                                    onClick={() =>
+                                      handleCellClick(
+                                        tableIndex,
+                                        rowIndex,
+                                        colIndex
+                                      )
+                                    }
+                                    onDoubleClick={() =>
+                                      handleCellDoubleClick(
+                                        tableIndex,
+                                        rowIndex,
+                                        colIndex
+                                      )
+                                    }
+                                  >
+                                    {cell.value}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        });
+                      })()}
                     </tbody>
                   </table>
                 ) : (
@@ -1630,101 +1710,49 @@ function App() {
           </div>
         </div>
       )}
-      {/* Settings Modal */}
-      {showSettingsModal && (
-        <div
-          className="modal-overlay"
-          onClick={() => setShowSettingsModal(false)}
-        >
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: "500px" }}
-          >
+
+      {/* Keep Last N Rows Confirmation Modal */}
+      {showKeepLastNRowsModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "500px" }}>
             <div className="modal-header">
-              <h3>⚙️ Cài đặt</h3>
+              <h3 style={{ fontSize: "24px" }}>⚠️ Xác nhận</h3>
             </div>
 
             <div className="modal-body">
-              {/* Purple Range */}
-              <div className="form-group" style={{ marginBottom: "20px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "8px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Báo màu (từ - đến):
-                </label>
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
-                >
-                  <input
-                    type="number"
-                    value={purpleRangeFrom}
-                    onChange={(e) => setPurpleRangeFrom(e.target.value)}
-                    placeholder="Từ"
-                    className="toolbar-input-small"
-                    style={{ flex: 1, padding: "8px", fontSize: "16px" }}
-                  />
-                  <span>đến</span>
-                  <input
-                    type="number"
-                    value={purpleRangeTo}
-                    onChange={(e) => setPurpleRangeTo(e.target.value)}
-                    placeholder="Đến"
-                    className="toolbar-input-small"
-                    style={{ flex: 1, padding: "8px", fontSize: "16px" }}
-                  />
-                </div>
-              </div>
-
-              {/* Keep Last N Rows */}
-              <div className="form-group">
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "8px",
-                    fontWeight: "bold",
-                  }}
-                >
-                  Dòng tồn tại:
-                </label>
-                <div
-                  style={{ display: "flex", alignItems: "center", gap: "10px" }}
-                >
-                  <input
-                    type="number"
-                    value={keepLastNRows}
-                    onChange={(e) => setKeepLastNRows(e.target.value)}
-                    placeholder="VD: 5"
-                    className="toolbar-input-small"
-                    min="1"
-                    max={ROWS}
-                    style={{ flex: 1, padding: "8px", fontSize: "16px" }}
-                  />
-                  <button
-                    onClick={() => {
-                      handleKeepLastNRows();
-                      setShowSettingsModal(false);
-                    }}
-                    className="toolbar-button primary"
-                    style={{ padding: "8px 16px", fontSize: "16px" }}
-                  >
-                    ✓ Áp dụng
-                  </button>
-                </div>
-              </div>
+              <p
+                style={{
+                  fontSize: "18px",
+                  textAlign: "center",
+                  margin: "20px 0",
+                }}
+              >
+                Bạn có chắc chắn muốn chỉ giữ lại{" "}
+                <strong>{keepLastNRows}</strong> dòng cuối cùng?
+                <br />
+                <br />
+                Tất cả các dòng khác sẽ bị xóa!
+              </p>
             </div>
 
             <div className="modal-footer">
               <button
                 className="btn-cancel"
-                onClick={() => setShowSettingsModal(false)}
-                style={{ fontSize: "16px", padding: "8px 16px" }}
+                onClick={() => setShowKeepLastNRowsModal(false)}
+                style={{ fontSize: "18px", padding: "12px 24px" }}
               >
-                Đóng
+                Hủy
+              </button>
+              <button
+                className="btn-delete"
+                onClick={() => {
+                  handleKeepLastNRows();
+                  setShowKeepLastNRowsModal(false);
+                  setShowSettingsModal(false);
+                }}
+                style={{ fontSize: "18px", padding: "12px 24px" }}
+              >
+                Xác nhận
               </button>
             </div>
           </div>

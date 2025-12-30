@@ -90,9 +90,11 @@ function InputPage() {
       if (lastRowWithData !== -1) {
         // Delay nhỏ để đảm bảo DOM đã render
         setTimeout(() => {
+          // Scroll lên 4 ô so với dòng cuối cùng có dữ liệu
+          const targetRow = Math.max(0, lastRowWithData - 4);
           // Tìm row element và scroll đến đó
           const rowElement = document.querySelector(
-            `tr:nth-child(${lastRowWithData + 2})`
+            `tr:nth-child(${targetRow + 2})`
           ); // +2 vì có header row
           if (rowElement) {
             rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -127,6 +129,7 @@ function InputPage() {
     await Promise.all(savePromises);
 
     setSaveStatus("✅ Đã lưu tất cả Q1-Q10!");
+    alert("✅ Đã lưu thành công!");
     setTimeout(() => setSaveStatus(""), 2000);
   };
 
@@ -309,85 +312,93 @@ function InputPage() {
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: ROWS }, (_, rowIndex) => {
-                if (deletedRows[rowIndex]) return null;
+              {(() => {
+                let displayRowNumber = 0;
+                return Array.from({ length: ROWS }, (_, rowIndex) => {
+                  if (deletedRows[rowIndex]) return null;
 
-                return (
-                  <tr key={rowIndex}>
-                    <td>{String(rowIndex).padStart(3, "0")}</td>
-                    <td>
-                      <input
-                        type="date"
-                        className="cell-input"
-                        value={dateValues[rowIndex] || ""}
-                        onChange={(e) => {
-                          const newDateValues = [...dateValues];
-                          newDateValues[rowIndex] = e.target.value;
-                          setDateValues(newDateValues);
-                        }}
-                      />
-                    </td>
+                  displayRowNumber++;
+                  return (
+                    <tr key={rowIndex}>
+                      <td>{String(displayRowNumber).padStart(3, "0")}</td>
+                      <td>
+                        <input
+                          type="date"
+                          className="cell-input"
+                          value={dateValues[rowIndex] || ""}
+                          onChange={(e) => {
+                            const newDateValues = [...dateValues];
+                            newDateValues[rowIndex] = e.target.value;
+                            setDateValues(newDateValues);
+                          }}
+                        />
+                      </td>
 
-                    {Array.from({ length: 10 }, (_, qIndex) => {
-                      const colors = [
-                        "#e3f2fd",
-                        "#f3e5f5",
-                        "#fff3e0",
-                        "#e8f5e9",
-                        "#fce4ec",
-                        "#e0f2f1",
-                        "#fff9c4",
-                        "#f1f8e9",
-                        "#ede7f6",
-                        "#ffebee",
-                      ];
+                      {Array.from({ length: 10 }, (_, qIndex) => {
+                        const colors = [
+                          "#e3f2fd",
+                          "#f3e5f5",
+                          "#fff3e0",
+                          "#e8f5e9",
+                          "#fce4ec",
+                          "#e0f2f1",
+                          "#fff9c4",
+                          "#f1f8e9",
+                          "#ede7f6",
+                          "#ffebee",
+                        ];
 
-                      return (
-                        <>
-                          <td
-                            key={`t1-${qIndex}`}
-                            style={{
-                              backgroundColor: colors[qIndex],
-                              borderLeft: "3px solid red",
-                            }}
-                          >
-                            <input
-                              type="text"
-                              className="cell-input small"
-                              value={allQData[qIndex].t1Values[rowIndex] || ""}
-                              onChange={(e) => {
-                                const newAllQData = [...allQData];
-                                newAllQData[qIndex].t1Values[rowIndex] =
-                                  e.target.value;
-                                setAllQData(newAllQData);
+                        return (
+                          <>
+                            <td
+                              key={`t1-${qIndex}`}
+                              style={{
+                                backgroundColor: colors[qIndex],
+                                borderLeft: "3px solid red",
                               }}
-                            />
-                          </td>
-                          <td
-                            key={`t2-${qIndex}`}
-                            style={{
-                              backgroundColor: colors[qIndex],
-                              borderRight: "3px solid red",
-                            }}
-                          >
-                            <input
-                              type="text"
-                              className="cell-input small"
-                              value={allQData[qIndex].t2Values[rowIndex] || ""}
-                              onChange={(e) => {
-                                const newAllQData = [...allQData];
-                                newAllQData[qIndex].t2Values[rowIndex] =
-                                  e.target.value;
-                                setAllQData(newAllQData);
+                            >
+                              <input
+                                type="text"
+                                className="cell-input small"
+                                value={
+                                  allQData[qIndex].t1Values[rowIndex] || ""
+                                }
+                                onChange={(e) => {
+                                  const newAllQData = [...allQData];
+                                  newAllQData[qIndex].t1Values[rowIndex] =
+                                    e.target.value;
+                                  setAllQData(newAllQData);
+                                }}
+                              />
+                            </td>
+                            <td
+                              key={`t2-${qIndex}`}
+                              style={{
+                                backgroundColor: colors[qIndex],
+                                borderRight: "3px solid red",
                               }}
-                            />
-                          </td>
-                        </>
-                      );
-                    })}
-                  </tr>
-                );
-              })}
+                            >
+                              <input
+                                type="text"
+                                className="cell-input small"
+                                value={
+                                  allQData[qIndex].t2Values[rowIndex] || ""
+                                }
+                                onChange={(e) => {
+                                  const newAllQData = [...allQData];
+                                  newAllQData[qIndex].t2Values[rowIndex] =
+                                    e.target.value;
+                                  setAllQData(newAllQData);
+                                }}
+                              />
+                            </td>
+                          </>
+                        );
+                      })}
+                    </tr>
+                  );
+                });
+              })()}
             </tbody>
           </table>
         </div>
