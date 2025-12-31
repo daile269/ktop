@@ -80,6 +80,11 @@ function App() {
   // State cho keep last N rows confirmation modal
   const [showKeepLastNRowsModal, setShowKeepLastNRowsModal] = useState(false);
 
+  // State cho delete confirmation modals
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [showDeleteByDatesModal, setShowDeleteByDatesModal] = useState(false);
+  const [showDeleteLastRowModal, setShowDeleteLastRowModal] = useState(false);
+
   // State để lưu thông tin các Q có ô màu vàng
   const [qPurpleInfo, setQPurpleInfo] = useState({}); // {q1: {hasPurple: true, cells: ['3-10', '4-9']}, ...}
 
@@ -823,6 +828,59 @@ function App() {
   };
 
   // Delete first visible row
+  const handleDeleteLastRow = async () => {
+    // Tìm dòng cuối cùng (dòng không bị xóa cuối cùng)
+    let lastRowIndex = -1;
+    for (let i = ROWS - 1; i >= 0; i--) {
+      if (!deletedRows[i]) {
+        // Check if row has data
+        if (dateValues[i] || allTValues[0][i] || allTValues[1][i]) {
+          lastRowIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (lastRowIndex === -1) {
+      alert("⚠️ Không có dòng nào để xóa!");
+      setShowDeleteLastRowModal(false);
+      return;
+    }
+
+    // Đánh dấu dòng cuối cùng là deleted
+    const newDeletedRows = [...deletedRows];
+    newDeletedRows[lastRowIndex] = true;
+    setDeletedRows(newDeletedRows);
+
+    // Sync to all Q1-Q10
+    setSaveStatus("💾 Đang đồng bộ...");
+    const syncPromises = [];
+    for (let i = 1; i <= 10; i++) {
+      const qId = `q${i}`;
+      const result = await loadPageData(qId);
+      if (result.success && result.data) {
+        syncPromises.push(
+          savePageData(
+            qId,
+            result.data.t1Values,
+            result.data.t2Values,
+            dateValues,
+            newDeletedRows,
+            purpleRangeFrom,
+            purpleRangeTo
+          )
+        );
+      }
+    }
+
+    await Promise.all(syncPromises);
+    setSaveStatus("✅ Đã xóa dòng cuối cùng và đồng bộ");
+    setTimeout(() => setSaveStatus(""), 2000);
+
+    setShowDeleteLastRowModal(false);
+    alert(`✅ Đã xóa dòng mới nhất thành công!`);
+  };
+
   const handleDeleteFirstRow = async () => {
     // Find first non-deleted row with data
     let firstRowIndex = -1;
@@ -881,112 +939,127 @@ function App() {
     setShowDeleteModal(true);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
+    // Hiện modal xác nhận tương ứng với option đã chọn
+    if (deleteOption === "all") {
+      setShowDeleteModal(false);
+      setShowDeleteAllModal(true);
+    } else if (deleteOption === "firstRow") {
+      setShowDeleteModal(false);
+      setShowDeleteFirstRowModal(true);
+    } else if (deleteOption === "lastRow") {
+      setShowDeleteModal(false);
+      setShowDeleteLastRowModal(true);
+    } else if (deleteOption === "dates") {
+      if (!deleteDateFrom || !deleteDateTo) {
+        alert("⚠️ Vui lòng nhập đầy đủ ngày!");
+        return;
+      }
+      setShowDeleteModal(false);
+      setShowDeleteByDatesModal(true);
+    }
+  };
+
+  const confirmDeleteAll = async () => {
     try {
-      const newAllTValues = [...allTValues];
-      const newDateValues = [...dateValues];
-
-      if (deleteOption === "all") {
-        // Xóa tất cả Q1-Q10
-        const deletePromises = [];
-        for (let i = 1; i <= 10; i++) {
-          deletePromises.push(deletePageData(`q${i}`));
-        }
-
-        await Promise.all(deletePromises);
-
-        // Xóa localStorage để tránh migrate lại data cũ
-        localStorage.clear();
-
-        setAllTValues(
-          Array(TOTAL_TABLES)
-            .fill(null)
-            .map(() => Array(ROWS).fill(""))
-        );
-        setDateValues(Array(ROWS).fill(""));
-        setDeletedRows(Array(ROWS).fill(false)); // Reset deletedRows
-        setAllTableData(
-          Array(TOTAL_TABLES)
-            .fill(null)
-            .map(() => [])
-        );
-        setIsDataLoaded(false);
-
-        alert("✅ Đã xóa tất cả dữ liệu Q1-Q10!");
-      } else if (deleteOption === "firstRow") {
-        // Đóng modal xóa dữ liệu và mở modal xác nhận xóa dòng đầu tiên
-        setShowDeleteModal(false);
-        setShowDeleteFirstRowModal(true);
-        return; // Không reset form ở đây
-      } else if (deleteOption === "dates") {
-        // Đánh dấu rows theo ngày bị xóa (soft delete)
-        if (!deleteDateFrom || !deleteDateTo) {
-          alert("⚠️ Vui lòng nhập đầy đủ ngày!");
-          return;
-        }
-
-        const newDeletedRows = [...deletedRows];
-        let deletedCount = 0;
-
-        // Đánh dấu deleted cho các dòng trong khoảng ngày
-        for (let i = 0; i < ROWS; i++) {
-          const dateStr = dateValues[i];
-
-          const shouldDelete =
-            dateStr && dateStr >= deleteDateFrom && dateStr <= deleteDateTo;
-
-          if (shouldDelete) {
-            newDeletedRows[i] = true;
-            deletedCount++;
-          }
-        }
-
-        setDeletedRows(newDeletedRows);
-
-        // Lưu Q hiện tại
-        setSaveStatus("💾 Đang lưu...");
-        const result = await savePageData(
-          pageId,
-          allTValues[0],
-          allTValues[1],
-          dateValues,
-          newDeletedRows,
-          purpleRangeFrom,
-          purpleRangeTo
-        );
-
-        // Sync deletedRows sang Q1-Q10
-        for (let i = 1; i <= 10; i++) {
-          const qId = `q${i}`;
-          if (qId !== pageId) {
-            const qResult = await loadPageData(qId);
-            if (qResult.success && qResult.data) {
-              await savePageData(
-                qId,
-                qResult.data.t1Values,
-                qResult.data.t2Values,
-                dateValues,
-                newDeletedRows,
-                purpleRangeFrom,
-                purpleRangeTo
-              );
-            }
-          }
-        }
-
-        if (result.success) {
-          setSaveStatus("✅ Đã lưu dữ liệu thành công");
-          alert(
-            `✅ Đã xóa ${deletedCount} dòng từ ${deleteDateFrom} đến ${deleteDateTo} (đồng bộ Q1-Q10)!`
-          );
-        } else {
-          setSaveStatus("⚠️ Lỗi: " + result.error);
-        }
-
-        setTimeout(() => setSaveStatus(""), 2000);
+      // Xóa tất cả Q1-Q10
+      const deletePromises = [];
+      for (let i = 1; i <= 10; i++) {
+        deletePromises.push(deletePageData(`q${i}`));
       }
 
-      setShowDeleteModal(false);
+      await Promise.all(deletePromises);
+
+      // Xóa localStorage để tránh migrate lại data cũ
+      localStorage.clear();
+
+      setAllTValues(
+        Array(TOTAL_TABLES)
+          .fill(null)
+          .map(() => Array(ROWS).fill(""))
+      );
+      setDateValues(Array(ROWS).fill(""));
+      setDeletedRows(Array(ROWS).fill(false));
+      setAllTableData(
+        Array(TOTAL_TABLES)
+          .fill(null)
+          .map(() => [])
+      );
+      setIsDataLoaded(false);
+
+      setShowDeleteAllModal(false);
+      alert("✅ Đã xóa tất cả dữ liệu Q1-Q10!");
+
+      // Reset form
+      setDeleteOption("all");
+      setDeleteDateFrom("");
+      setDeleteDateTo("");
+    } catch (error) {
+      alert("⚠️ Lỗi: " + error.message);
+    }
+  };
+
+  const confirmDeleteByDates = async () => {
+    try {
+      const newDeletedRows = [...deletedRows];
+      let deletedCount = 0;
+
+      // Đánh dấu deleted cho các dòng trong khoảng ngày
+      for (let i = 0; i < ROWS; i++) {
+        const dateStr = dateValues[i];
+        const shouldDelete =
+          dateStr && dateStr >= deleteDateFrom && dateStr <= deleteDateTo;
+
+        if (shouldDelete) {
+          newDeletedRows[i] = true;
+          deletedCount++;
+        }
+      }
+
+      setDeletedRows(newDeletedRows);
+
+      // Lưu Q hiện tại
+      setSaveStatus("💾 Đang lưu...");
+      const result = await savePageData(
+        pageId,
+        allTValues[0],
+        allTValues[1],
+        dateValues,
+        newDeletedRows,
+        purpleRangeFrom,
+        purpleRangeTo
+      );
+
+      // Sync deletedRows sang Q1-Q10
+      for (let i = 1; i <= 10; i++) {
+        const qId = `q${i}`;
+        if (qId !== pageId) {
+          const qResult = await loadPageData(qId);
+          if (qResult.success && qResult.data) {
+            await savePageData(
+              qId,
+              qResult.data.t1Values,
+              qResult.data.t2Values,
+              dateValues,
+              newDeletedRows,
+              purpleRangeFrom,
+              purpleRangeTo
+            );
+          }
+        }
+      }
+
+      if (result.success) {
+        setSaveStatus("✅ Đã lưu dữ liệu thành công");
+        alert(
+          `✅ Đã xóa ${deletedCount} dòng từ ${deleteDateFrom} đến ${deleteDateTo} (đồng bộ Q1-Q10)!`
+        );
+      } else {
+        setSaveStatus("⚠️ Lỗi: " + result.error);
+      }
+
+      setTimeout(() => setSaveStatus(""), 2000);
+      setShowDeleteByDatesModal(false);
 
       // Reset form
       setDeleteOption("all");
@@ -1475,7 +1548,26 @@ function App() {
                     onChange={(e) => setDeleteOption(e.target.value)}
                     style={{ width: "20px", height: "20px", cursor: "pointer" }}
                   />
-                  Xóa dòng
+                  Xóa dòng cũ nhất
+                </label>
+
+                <label
+                  style={{
+                    fontSize: "35px",
+                    marginBottom: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    value="lastRow"
+                    checked={deleteOption === "lastRow"}
+                    onChange={(e) => setDeleteOption(e.target.value)}
+                    style={{ width: "20px", height: "20px", cursor: "pointer" }}
+                  />
+                  Xóa dòng mới nhất
                 </label>
 
                 <label
@@ -1711,6 +1803,42 @@ function App() {
         </div>
       )}
 
+      {/* Delete Last Row Confirmation Modal */}
+      {showDeleteLastRowModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>⚠️ Xác nhận xóa dòng</h3>
+            </div>
+
+            <div className="modal-body">
+              <p
+                style={{
+                  fontSize: "18px",
+                  textAlign: "center",
+                  margin: "20px 0",
+                }}
+              >
+                Bạn có chắc chắn muốn xóa dòng cuối cùng (dòng mới nhất) hiện
+                tại không?
+              </p>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowDeleteLastRowModal(false)}
+              >
+                Hủy
+              </button>
+              <button className="btn-delete" onClick={handleDeleteLastRow}>
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Keep Last N Rows Confirmation Modal */}
       {showKeepLastNRowsModal && (
         <div className="modal-overlay">
@@ -1753,6 +1881,100 @@ function App() {
                 style={{ fontSize: "18px", padding: "12px 24px" }}
               >
                 Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete All Confirmation Modal */}
+      {showDeleteAllModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "500px" }}>
+            <div className="modal-header">
+              <h3 style={{ fontSize: "24px" }}>⚠️ Xác nhận xóa tất cả</h3>
+            </div>
+
+            <div className="modal-body">
+              <p
+                style={{
+                  fontSize: "18px",
+                  textAlign: "center",
+                  margin: "20px 0",
+                }}
+              >
+                Bạn có chắc chắn muốn xóa <strong>TẤT CẢ</strong> dữ liệu
+                Q1-Q10?
+                <br />
+                <br />
+                <span style={{ color: "#dc3545", fontWeight: "bold" }}>
+                  Hành động này không thể hoàn tác!
+                </span>
+              </p>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowDeleteAllModal(false)}
+                style={{ fontSize: "18px", padding: "12px 24px" }}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn-delete"
+                onClick={confirmDeleteAll}
+                style={{ fontSize: "18px", padding: "12px 24px" }}
+              >
+                Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete By Dates Confirmation Modal */}
+      {showDeleteByDatesModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "500px" }}>
+            <div className="modal-header">
+              <h3 style={{ fontSize: "24px" }}>⚠️ Xác nhận xóa theo ngày</h3>
+            </div>
+
+            <div className="modal-body">
+              <p
+                style={{
+                  fontSize: "18px",
+                  textAlign: "center",
+                  margin: "20px 0",
+                }}
+              >
+                Bạn có chắc chắn muốn xóa các dòng từ:
+                <br />
+                <br />
+                <strong style={{ fontSize: "20px", color: "#dc3545" }}>
+                  {deleteDateFrom} đến {deleteDateTo}
+                </strong>
+                <br />
+                <br />
+                Dữ liệu sẽ được đồng bộ xóa trên tất cả Q1-Q10!
+              </p>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowDeleteByDatesModal(false)}
+                style={{ fontSize: "18px", padding: "12px 24px" }}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn-delete"
+                onClick={confirmDeleteByDates}
+                style={{ fontSize: "18px", padding: "12px 24px" }}
+              >
+                Xác nhận xóa
               </button>
             </div>
           </div>
