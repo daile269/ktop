@@ -93,20 +93,20 @@ function InputPage() {
   // Auto scroll to last row with data
   useEffect(() => {
     if (!isLoading && dateValues.length > 0) {
-      // Tìm dòng cuối cùng có dữ liệu
-      let lastRowWithData = -1;
-      for (let i = dateValues.length - 1; i >= 0; i--) {
+      // Đếm số dòng chưa xóa có dữ liệu
+      let nonDeletedRowsCount = 0;
+      for (let i = 0; i < dateValues.length; i++) {
         if (!deletedRows[i] && dateValues[i]) {
-          lastRowWithData = i;
-          break;
+          nonDeletedRowsCount++;
         }
       }
 
-      if (lastRowWithData !== -1) {
+      if (nonDeletedRowsCount > 0) {
         // Delay nhỏ để đảm bảo DOM đã render
         setTimeout(() => {
-          // Scroll lên 4 ô so với dòng cuối cùng có dữ liệu
-          const targetRow = Math.max(0, lastRowWithData - 10);
+          // Scroll đến dòng cuối cùng có dữ liệu (sau khi sort)
+          // Vì rows được sort nên dòng cuối = nonDeletedRowsCount
+          const targetRow = Math.max(0, nonDeletedRowsCount - 2);
           // Tìm row element và scroll đến đó
           const rowElement = document.querySelector(
             `tr:nth-child(${targetRow + 2})`
