@@ -10,8 +10,9 @@ import { ref, set, get, remove } from 'firebase/database';
  * @param {Array} deletedRows - Mảng đánh dấu rows bị xóa
  * @param {number} purpleRangeFrom - Khoảng số bắt đầu tô tím
  * @param {number} purpleRangeTo - Khoảng số kết thúc tô tím
+ * @param {number} keepLastNRows - Số dòng tồn tại
  */
-export const savePageData = async (pageId, t1Values, t2Values, dateValues, deletedRows = [], purpleRangeFrom = 0, purpleRangeTo = 0) => {
+export const savePageData = async (pageId, t1Values, t2Values, dateValues, deletedRows = [], purpleRangeFrom = 0, purpleRangeTo = 0, keepLastNRows = 366) => {
   try {
     const pageRef = ref(db, `pages/${pageId}`);
     
@@ -38,6 +39,7 @@ export const savePageData = async (pageId, t1Values, t2Values, dateValues, delet
       deletedRows: trimmedDeleted,
       purpleRangeFrom,  // Lưu purple range
       purpleRangeTo,
+      keepLastNRows,    // Lưu số dòng tồn tại
       updatedAt: new Date().toISOString()
     });
     
@@ -82,7 +84,8 @@ export const loadPageData = async (pageId) => {
           dateValues: dates,
           deletedRows: deleted,
           purpleRangeFrom: data.purpleRangeFrom || 0,  // Load purple range
-          purpleRangeTo: data.purpleRangeTo || 0
+          purpleRangeTo: data.purpleRangeTo || 0,
+          keepLastNRows: data.keepLastNRows || 366     // Load số dòng tồn tại
         }
       };
     } else {

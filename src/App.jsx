@@ -244,14 +244,33 @@ function App() {
           newAllTValues[1] = result.data.t2Values;
 
           setAllTValues(newAllTValues);
-          setDateValues(result.data.dateValues || Array(ROWS).fill("")); // Load dateValues
-          setDeletedRows(result.data.deletedRows || Array(ROWS).fill(false)); // Load deletedRows
+          const loadedDateValues =
+            result.data.dateValues || Array(ROWS).fill("");
+          const loadedDeletedRows =
+            result.data.deletedRows || Array(ROWS).fill(false);
+
+          setDateValues(loadedDateValues); // Load dateValues
+          setDeletedRows(loadedDeletedRows); // Load deletedRows
 
           // Set purple range TRƯỚC khi generate
           const loadedPurpleFrom = result.data.purpleRangeFrom || 0;
           const loadedPurpleTo = result.data.purpleRangeTo || 0;
           setPurpleRangeFrom(loadedPurpleFrom);
           setPurpleRangeTo(loadedPurpleTo);
+
+          // Load keepLastNRows từ DB (ưu tiên)
+          if (result.data.keepLastNRows) {
+            setKeepLastNRows(result.data.keepLastNRows);
+          } else {
+            // Nếu chưa có trong DB, tính số dòng còn lại
+            let nonDeletedCount = 0;
+            for (let i = 0; i < ROWS; i++) {
+              if (!loadedDeletedRows[i]) {
+                nonDeletedCount++;
+              }
+            }
+            setKeepLastNRows(nonDeletedCount);
+          }
 
           setIsDataLoaded(true);
 
@@ -572,7 +591,8 @@ function App() {
         dateValues,
         deletedRows,
         purpleRangeFrom,
-        purpleRangeTo
+        purpleRangeTo,
+        keepLastNRows
       );
 
       if (result.success) {
@@ -596,7 +616,8 @@ function App() {
       dateValues,
       deletedRows,
       purpleRangeFrom,
-      purpleRangeTo
+      purpleRangeTo,
+      keepLastNRows
     );
 
     if (result.success) {
@@ -738,7 +759,8 @@ function App() {
             newDateValues,
             newDeletedRows, // Sync deletedRows mới
             purpleRangeFrom,
-            purpleRangeTo
+            purpleRangeTo,
+            keepLastNRows
           )
         );
       }
@@ -768,33 +790,44 @@ function App() {
       return;
     }
 
-    if (n > ROWS) {
-      alert(`⚠️ Số dòng không được vượt quá ${ROWS}`);
-      return;
-    }
+    // if (n > ROWS) {
+    //   alert(`⚠️ Số dòng không được vượt quá ${ROWS}`);
+    //   return;
+    // }
 
-    // Find all rows with data
-    const rowsWithData = [];
+    // Find all NON-DELETED rows with data
+    const nonDeletedRowsWithData = [];
     for (let i = 0; i < ROWS; i++) {
-      if (dateValues[i] || allTValues[0][i] || allTValues[1][i]) {
-        rowsWithData.push(i);
+      // Chỉ xét các dòng CHƯA xóa
+      if (
+        !deletedRows[i] &&
+        (dateValues[i] || allTValues[0][i] || allTValues[1][i])
+      ) {
+        nonDeletedRowsWithData.push(i);
       }
     }
 
-    if (rowsWithData.length === 0) {
-      alert("⚠️ Không có dòng nào có dữ liệu!");
+    if (nonDeletedRowsWithData.length === 0) {
+      alert("⚠️ Không có dòng nào có dữ liệu (chưa xóa)!");
       return;
     }
 
-    // Keep only last N rows
-    const rowsToKeep = rowsWithData.slice(-n);
-    const newDeletedRows = Array(ROWS).fill(false);
+    // Keep only last N rows from non-deleted rows
+    const rowsToKeep = nonDeletedRowsWithData.slice(-n);
 
-    // Mark all rows as deleted except the last N rows
+    // Giữ nguyên deletedRows hiện tại, chỉ cập nhật các dòng chưa xóa
+    const newDeletedRows = [...deletedRows];
+
+    // Chỉ đánh dấu deleted cho các dòng CHƯA xóa mà không nằm trong rowsToKeep
     for (let i = 0; i < ROWS; i++) {
-      if (!rowsToKeep.includes(i)) {
-        newDeletedRows[i] = true;
+      // Chỉ tác động vào các dòng chưa xóa
+      if (!deletedRows[i]) {
+        // Nếu dòng này không nằm trong rowsToKeep thì đánh dấu xóa
+        if (!rowsToKeep.includes(i)) {
+          newDeletedRows[i] = true;
+        }
       }
+      // Các dòng đã xóa (deletedRows[i] = true) thì KHÔNG đụng vào
     }
 
     setDeletedRows(newDeletedRows);
@@ -814,7 +847,8 @@ function App() {
             dateValues,
             newDeletedRows,
             purpleRangeFrom,
-            purpleRangeTo
+            purpleRangeTo,
+            keepLastNRows
           )
         );
       }
@@ -867,7 +901,8 @@ function App() {
             dateValues,
             newDeletedRows,
             purpleRangeFrom,
-            purpleRangeTo
+            purpleRangeTo,
+            keepLastNRows
           )
         );
       }
@@ -921,7 +956,8 @@ function App() {
             dateValues,
             newDeletedRows,
             purpleRangeFrom,
-            purpleRangeTo
+            purpleRangeTo,
+            keepLastNRows
           )
         );
       }
@@ -1027,7 +1063,8 @@ function App() {
         dateValues,
         newDeletedRows,
         purpleRangeFrom,
-        purpleRangeTo
+        purpleRangeTo,
+        keepLastNRows
       );
 
       // Sync deletedRows sang Q1-Q10
@@ -1043,7 +1080,8 @@ function App() {
               dateValues,
               newDeletedRows,
               purpleRangeFrom,
-              purpleRangeTo
+              purpleRangeTo,
+              keepLastNRows
             );
           }
         }
@@ -1072,11 +1110,40 @@ function App() {
 
   return (
     <div className="app-container-full">
+      {/* PMA Title */}
+      <div
+        style={{
+          width: "100%",
+          textAlign: "center",
+          backgroundColor: "#f8f9fa",
+          borderBottom: "2px solid #dee2e6",
+        }}
+      >
+        <h1
+          style={{
+            fontSize: "32px",
+            fontWeight: "bold",
+            fontStyle: "italic",
+            margin: "0",
+            color: "#333",
+          }}
+        >
+          Phần mềm hỗ trợ dự án cải tạo môi trường biển Việt Nam
+        </h1>
+      </div>
       {/* Top Toolbar - Chứa tất cả controls */}
       <div className="top-toolbar">
         <div className="toolbar-section">
           {/* Action Buttons */}
-          <div className="toolbar-group">
+          <div
+            className="toolbar-group"
+            style={{
+              border: "3px solid #28a745",
+              borderRadius: "8px",
+              padding: "10px 15px",
+              backgroundColor: "#e8f5e9",
+            }}
+          >
             <button
               onClick={handleAddRow}
               className="toolbar-button success"
@@ -1088,7 +1155,7 @@ function App() {
               onClick={handleInputAllQ}
               className="toolbar-button primary"
             >
-              📥 Nhập dữ liệu toàn bộ Q
+              📥 Nhập liệu
             </button>
             <button onClick={clearColumnHighlights} className="toolbar-button">
               🔄 Xóa màu dòng cột thông
@@ -1107,9 +1174,17 @@ function App() {
           {/* Báo màu Control */}
           <div
             className="toolbar-group"
-            style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              border: "3px solid #007bff",
+              borderRadius: "8px",
+              padding: "10px 15px",
+              backgroundColor: "#e7f3ff",
+            }}
           >
-            <label style={{ fontSize: "32px", fontWeight: "bold" }}>
+            <label style={{ fontSize: "28px", fontWeight: "bold" }}>
               Báo màu:
             </label>
             <input
@@ -1121,13 +1196,13 @@ function App() {
               style={{
                 width: "70px",
                 padding: "6px",
-                fontSize: "32px",
+                fontSize: "28px",
                 border: "2px solid #ffc107",
                 borderRadius: "4px",
                 textAlign: "center",
               }}
             />
-            <span style={{ fontSize: "32px" }}>đến</span>
+            <span style={{ fontSize: "28px" }}>đến</span>
             <input
               type="number"
               value={purpleRangeTo}
@@ -1137,7 +1212,7 @@ function App() {
               style={{
                 width: "70px",
                 padding: "6px",
-                fontSize: "32px",
+                fontSize: "28px",
                 border: "2px solid #ffc107",
                 borderRadius: "4px",
                 textAlign: "center",
@@ -1148,7 +1223,15 @@ function App() {
           {/* Dòng tồn tại Control */}
           <div
             className="toolbar-group"
-            style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              border: "3px solid #007bff",
+              borderRadius: "8px",
+              padding: "10px 15px",
+              backgroundColor: "#e7f3ff",
+            }}
           >
             <label style={{ fontSize: "18px", fontWeight: "bold" }}>
               📊 Dòng tồn tại:
@@ -1263,12 +1346,21 @@ function App() {
               }}
               title="Các ô đang được báo màu vàng trong Q này"
             >
-              📍 Báo màu Q{pageId.replace("q", "")}: {formatPurpleCellsInfo()}
+              📍 MQ{pageId.replace("q", "")}: {formatPurpleCellsInfo()}
             </div>
           )}
 
           {/* Go To Table */}
-          <div className="toolbar-group" style={{ marginLeft: "12px" }}>
+          <div
+            className="toolbar-group"
+            style={{
+              marginLeft: "12px",
+              border: "3px solid #28a745",
+              borderRadius: "8px",
+              padding: "10px 15px",
+              backgroundColor: "#e8f5e9",
+            }}
+          >
             <label style={{ fontSize: "18px", fontWeight: "bold" }}>
               Đi đến Thông:
             </label>
@@ -1281,14 +1373,13 @@ function App() {
                   handleGoToTable();
                 }
               }}
-              placeholder="1-60"
               min="1"
               max={TOTAL_TABLES}
               style={{
                 width: "80px",
                 padding: "8px",
                 fontSize: "18px",
-                border: "2px solid #007bff",
+                border: "2px solid #28a745",
                 borderRadius: "4px",
                 textAlign: "center",
               }}
@@ -1403,7 +1494,8 @@ function App() {
                                             newDateValues,
                                             result.data.deletedRows || [],
                                             purpleRangeFrom,
-                                            purpleRangeTo
+                                            purpleRangeTo,
+                                            keepLastNRows
                                           )
                                         );
                                       }
