@@ -106,7 +106,7 @@ function InputPage() {
         setTimeout(() => {
           // Scroll đến dòng cuối cùng có dữ liệu (sau khi sort)
           // Vì rows được sort nên dòng cuối = nonDeletedRowsCount
-          const targetRow = Math.max(0, nonDeletedRowsCount - 2);
+          const targetRow = Math.max(0, nonDeletedRowsCount + 3);
           // Tìm row element và scroll đến đó
           const rowElement = document.querySelector(
             `tr:nth-child(${targetRow + 2})`
@@ -163,10 +163,13 @@ function InputPage() {
       {/* PMA Title */}
       <div
         style={{
+          position: "sticky",
+          top: 0,
           width: "100%",
           textAlign: "center",
           backgroundColor: "#f8f9fa",
           borderBottom: "2px solid #dee2e6",
+          zIndex: 100,
         }}
       >
         <h1
