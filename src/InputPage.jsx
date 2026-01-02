@@ -261,7 +261,7 @@ function InputPage() {
                 onClick={handleSave}
                 style={{ fontSize: "20px" }}
               >
-                Lưu dữ liệu
+                💾Lưu dữ liệu
               </button>
               {saveStatus && (
                 <span style={{ color: "#28a745" }}>{saveStatus}</span>
