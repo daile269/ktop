@@ -189,13 +189,13 @@ function InputPage() {
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent: "center",
               alignItems: "center",
               marginBottom: "20px",
-              marginTop: "30px",
+              marginTop: "10px",
             }}
           >
-            <div
+            {/* <div
               style={{
                 padding: "12px 20px",
                 background: "#f9f9f9",
@@ -246,9 +246,16 @@ function InputPage() {
                   textAlign: "center",
                 }}
               />
-            </div>
+            </div> */}
             {/* <h2 style={{ fontSize: "30px" }}>Nhập T1, T2 cho Q1-Q10</h2> */}
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <button
                 className="toolbar-btn"
                 onClick={handleSave}
