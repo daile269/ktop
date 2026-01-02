@@ -221,57 +221,58 @@ function InputPage() {
                 🔍 Tra cứu
               </button>
             </div>
-          </div>
-
-          <div
-            style={{
-              padding: "12px 20px",
-              background: "#f9f9f9",
-              borderBottom: "1px solid #e0e0e0",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              marginBottom: "20px",
-            }}
-          >
-            <label
-              style={{ fontSize: "30px", fontWeight: "600", color: "#555" }}
+            <div
+              style={{
+                padding: "12px 20px",
+                background: "#f9f9f9",
+                borderBottom: "1px solid #e0e0e0",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                marginBottom: "20px",
+              }}
             >
-              Nhập khoảng số muốn báo màu:
-            </label>
-            <input
-              type="number"
-              min="0"
-              max="1000"
-              value={purpleRangeFrom}
-              onChange={(e) =>
-                setPurpleRangeFrom(parseInt(e.target.value) || 0)
-              }
-              style={{
-                width: "100px",
-                padding: "4px 8px",
-                fontSize: "30px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                textAlign: "center",
-              }}
-            />
-            <span style={{ fontSize: "30px", color: "#666" }}>đến</span>
-            <input
-              type="number"
-              min="0"
-              max="1000"
-              value={purpleRangeTo}
-              onChange={(e) => setPurpleRangeTo(parseInt(e.target.value) || 0)}
-              style={{
-                width: "100px",
-                padding: "4px 8px",
-                fontSize: "30px",
-                border: "1px solid #ddd",
-                borderRadius: "4px",
-                textAlign: "center",
-              }}
-            />
+              <label
+                style={{ fontSize: "30px", fontWeight: "600", color: "#555" }}
+              >
+                Nhập khoảng số muốn báo màu:
+              </label>
+              <input
+                type="number"
+                min="0"
+                max="1000"
+                value={purpleRangeFrom}
+                onChange={(e) =>
+                  setPurpleRangeFrom(parseInt(e.target.value) || 0)
+                }
+                style={{
+                  width: "100px",
+                  padding: "4px 8px",
+                  fontSize: "30px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  textAlign: "center",
+                }}
+              />
+              <span style={{ fontSize: "30px", color: "#666" }}>đến</span>
+              <input
+                type="number"
+                min="0"
+                max="1000"
+                value={purpleRangeTo}
+                onChange={(e) =>
+                  setPurpleRangeTo(parseInt(e.target.value) || 0)
+                }
+                style={{
+                  width: "100px",
+                  padding: "4px 8px",
+                  fontSize: "30px",
+                  border: "1px solid #ddd",
+                  borderRadius: "4px",
+                  textAlign: "center",
+                }}
+              />
+            </div>
           </div>
 
           <div
