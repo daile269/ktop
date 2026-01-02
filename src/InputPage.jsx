@@ -192,9 +192,10 @@ function InputPage() {
               justifyContent: "space-between",
               alignItems: "center",
               marginBottom: "20px",
+              marginTop: "30px",
             }}
           >
-            <h2 style={{ fontSize: "30px" }}>Nhập T1, T2 cho Q1-Q10</h2>
+            {/* <h2 style={{ fontSize: "30px" }}>Nhập T1, T2 cho Q1-Q10</h2> */}
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
               <button
                 className="toolbar-btn"
