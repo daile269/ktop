@@ -106,7 +106,7 @@ function InputPage() {
         setTimeout(() => {
           // Scroll đến dòng cuối cùng có dữ liệu (sau khi sort)
           // Vì rows được sort nên dòng cuối = nonDeletedRowsCount
-          const targetRow = Math.max(0, nonDeletedRowsCount + 3);
+          const targetRow = Math.max(0, nonDeletedRowsCount + 2);
           // Tìm row element và scroll đến đó
           const rowElement = document.querySelector(
             `tr:nth-child(${targetRow + 2})`
@@ -195,32 +195,6 @@ function InputPage() {
               marginTop: "30px",
             }}
           >
-            {/* <h2 style={{ fontSize: "30px" }}>Nhập T1, T2 cho Q1-Q10</h2> */}
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              <button
-                className="toolbar-btn"
-                onClick={handleSave}
-                style={{ fontSize: "20px" }}
-              >
-                Lưu dữ liệu
-              </button>
-              {saveStatus && (
-                <span style={{ color: "#28a745" }}>{saveStatus}</span>
-              )}
-              <button
-                className="toolbar-btn"
-                onClick={() => (window.location.href = "/q1")}
-                style={{
-                  marginLeft: "10px",
-                  background: "#28a745",
-                  color: "white",
-                  fontSize: "20px",
-                  border: "none",
-                }}
-              >
-                🔍 Tra cứu
-              </button>
-            </div>
             <div
               style={{
                 padding: "12px 20px",
@@ -272,6 +246,32 @@ function InputPage() {
                   textAlign: "center",
                 }}
               />
+            </div>
+            {/* <h2 style={{ fontSize: "30px" }}>Nhập T1, T2 cho Q1-Q10</h2> */}
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <button
+                className="toolbar-btn"
+                onClick={handleSave}
+                style={{ fontSize: "20px" }}
+              >
+                Lưu dữ liệu
+              </button>
+              {saveStatus && (
+                <span style={{ color: "#28a745" }}>{saveStatus}</span>
+              )}
+              <button
+                className="toolbar-btn"
+                onClick={() => (window.location.href = "/q1")}
+                style={{
+                  marginLeft: "10px",
+                  background: "#28a745",
+                  color: "white",
+                  fontSize: "20px",
+                  border: "none",
+                }}
+              >
+                🔍 Tra cứu
+              </button>
             </div>
           </div>
 
