@@ -861,7 +861,7 @@ function App() {
     alert(`✅ Đã xóa các dòng cũ, giữ lại ${n} dòng cuối cùng!`);
   };
 
-  // Delete first visible row
+  // Delete last visible row - XÓA THẬT SỰ khỏi DB
   const handleDeleteLastRow = async () => {
     // Tìm dòng cuối cùng (dòng không bị xóa cuối cùng)
     let lastRowIndex = -1;
@@ -881,9 +881,25 @@ function App() {
       return;
     }
 
-    // Đánh dấu dòng cuối cùng là deleted
+    // XÓA THẬT SỰ: Xóa dòng khỏi arrays
+    const newAllTValues = [...allTValues];
+    const newDateValues = [...dateValues];
     const newDeletedRows = [...deletedRows];
-    newDeletedRows[lastRowIndex] = true;
+
+    // Xóa phần tử tại index lastRowIndex
+    newAllTValues[0].splice(lastRowIndex, 1);
+    newAllTValues[1].splice(lastRowIndex, 1);
+    newDateValues.splice(lastRowIndex, 1);
+    newDeletedRows.splice(lastRowIndex, 1);
+
+    // Thêm phần tử trống vào cuối để giữ đủ ROWS phần tử
+    newAllTValues[0].push("");
+    newAllTValues[1].push("");
+    newDateValues.push("");
+    newDeletedRows.push(false);
+
+    setAllTValues(newAllTValues);
+    setDateValues(newDateValues);
     setDeletedRows(newDeletedRows);
 
     // Sync to all Q1-Q10
@@ -893,12 +909,21 @@ function App() {
       const qId = `q${i}`;
       const result = await loadPageData(qId);
       if (result.success && result.data) {
+        // Xóa dòng khỏi T1, T2 của Q này
+        const qT1Values = [...result.data.t1Values];
+        const qT2Values = [...result.data.t2Values];
+
+        qT1Values.splice(lastRowIndex, 1);
+        qT2Values.splice(lastRowIndex, 1);
+        qT1Values.push("");
+        qT2Values.push("");
+
         syncPromises.push(
           savePageData(
             qId,
-            result.data.t1Values,
-            result.data.t2Values,
-            dateValues,
+            qT1Values,
+            qT2Values,
+            newDateValues,
             newDeletedRows,
             purpleRangeFrom,
             purpleRangeTo,
@@ -968,7 +993,7 @@ function App() {
     setTimeout(() => setSaveStatus(""), 2000);
 
     setShowDeleteFirstRowModal(false);
-    alert(`✅ Đã xóa dòng ${firstRowIndex + 1}!`);
+    alert(`✅ Đã xóa dòng đầu tiên!`);
   };
 
   const clearData = () => {
@@ -1662,7 +1687,7 @@ function App() {
                   Xóa dòng mới nhất
                 </label>
 
-                <label
+                {/* <label
                   style={{
                     fontSize: "35px",
                     marginBottom: "16px",
@@ -1679,7 +1704,7 @@ function App() {
                     style={{ width: "20px", height: "20px", cursor: "pointer" }}
                   />
                   Xóa theo khoảng ngày
-                </label>
+                </label> */}
 
                 {deleteOption === "dates" && (
                   <div
