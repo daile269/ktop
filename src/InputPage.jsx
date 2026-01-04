@@ -93,31 +93,73 @@ function InputPage() {
   // Auto scroll to last row with data
   useEffect(() => {
     if (!isLoading && dateValues.length > 0) {
-      // Đếm số dòng chưa xóa có dữ liệu
-      let nonDeletedRowsCount = 0;
-      for (let i = 0; i < dateValues.length; i++) {
-        if (!deletedRows[i] && dateValues[i]) {
-          nonDeletedRowsCount++;
+      // Tìm dòng cuối cùng có dữ liệu (ngày hoặc T1/T2 của bất kỳ Q nào) và chưa xóa
+      let lastDataRowIndex = -1;
+      for (let i = dateValues.length - 1; i >= 0; i--) {
+        // Bỏ qua dòng đã xóa
+        if (deletedRows[i]) continue;
+
+        // Kiểm tra xem dòng này có dữ liệu không (ngày hoặc T1/T2 của bất kỳ Q nào)
+        let hasData =
+          dateValues[i] !== "" &&
+          dateValues[i] !== null &&
+          dateValues[i] !== undefined;
+
+        // Nếu chưa có ngày, kiểm tra T1/T2 của tất cả Q
+        if (!hasData) {
+          for (let qIndex = 0; qIndex < 10; qIndex++) {
+            const t1 = allQData[qIndex]?.t1Values[i];
+            const t2 = allQData[qIndex]?.t2Values[i];
+            if ((t1 && t1 !== "") || (t2 && t2 !== "")) {
+              hasData = true;
+              break;
+            }
+          }
+        }
+
+        if (hasData) {
+          lastDataRowIndex = i;
+          break;
         }
       }
 
-      if (nonDeletedRowsCount > 0) {
-        // Delay nhỏ để đảm bảo DOM đã render
+      if (lastDataRowIndex >= 0) {
+        // Delay để đảm bảo DOM đã render xong
         setTimeout(() => {
-          // Scroll đến dòng cuối cùng có dữ liệu (sau khi sort)
-          // Vì rows được sort nên dòng cuối = nonDeletedRowsCount
-          const targetRow = Math.max(0, nonDeletedRowsCount + 2);
-          // Tìm row element và scroll đến đó
+          // Tính vị trí của dòng này trong bảng đã sort
+          // Đếm số dòng chưa xóa trước dòng này
+          let displayRowNumber = 0;
+          for (let i = 0; i < dateValues.length; i++) {
+            if (!deletedRows[i]) {
+              displayRowNumber++;
+              if (i === lastDataRowIndex) break;
+            }
+          }
+
+          // Scroll đến dòng này (+2 vì có 2 header rows)
+          const targetRowNumber = displayRowNumber + 2;
           const rowElement = document.querySelector(
-            `tr:nth-child(${targetRow + 2})`
-          ); // +2 vì có header row
+            `tbody tr:nth-child(${displayRowNumber - 1})` // +1 để scroll xuống thêm 1 dòng
+          );
+
           if (rowElement) {
             rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
+          } else {
+            // Fallback: scroll container xuống 80%
+            const tableContainer =
+              document.querySelector(".schedule-table")?.parentElement;
+            if (tableContainer) {
+              const scrollPosition = tableContainer.scrollHeight * 0.8;
+              tableContainer.scrollTo({
+                top: scrollPosition,
+                behavior: "smooth",
+              });
+            }
           }
-        }, 300);
+        }, 500);
       }
     }
-  }, [isLoading, dateValues, deletedRows]);
+  }, [isLoading]);
 
   // Save data vào 10Q
   const handleSave = async () => {
@@ -192,7 +234,8 @@ function InputPage() {
               justifyContent: "center",
               alignItems: "center",
               marginBottom: "20px",
-              marginTop: "10px",
+              marginTop: "20px",
+              paddingTop: "20px",
             }}
           >
             {/* <div

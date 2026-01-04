@@ -252,9 +252,17 @@ function App() {
           setDateValues(loadedDateValues); // Load dateValues
           setDeletedRows(loadedDeletedRows); // Load deletedRows
 
-          // Set purple range TRƯỚC khi generate
-          const loadedPurpleFrom = result.data.purpleRangeFrom || 0;
-          const loadedPurpleTo = result.data.purpleRangeTo || 0;
+          // ⭐ LUÔN load purple range từ Q1 (không phải từ Q hiện tại)
+          // Điều này đảm bảo tất cả Q1-Q10 đều hiển thị cùng 1 khoảng báo màu
+          const q1Result = await loadPageData("q1");
+          let loadedPurpleFrom = 0;
+          let loadedPurpleTo = 0;
+
+          if (q1Result.success && q1Result.data) {
+            loadedPurpleFrom = q1Result.data.purpleRangeFrom || 0;
+            loadedPurpleTo = q1Result.data.purpleRangeTo || 0;
+          }
+
           setPurpleRangeFrom(loadedPurpleFrom);
           setPurpleRangeTo(loadedPurpleTo);
 
@@ -596,7 +604,31 @@ function App() {
       );
 
       if (result.success) {
-        setSaveStatus("✅ Đã lưu dữ liệu thành công");
+        // ⭐ Sync purple range sang tất cả Q1-Q10
+        const syncPromises = [];
+        for (let i = 1; i <= 10; i++) {
+          const qId = `q${i}`;
+          if (qId !== pageId) {
+            const qResult = await loadPageData(qId);
+            if (qResult.success && qResult.data) {
+              syncPromises.push(
+                savePageData(
+                  qId,
+                  qResult.data.t1Values,
+                  qResult.data.t2Values,
+                  dateValues,
+                  deletedRows,
+                  purpleRangeFrom, // ⭐ Sync purple range
+                  purpleRangeTo, // ⭐ Sync purple range
+                  keepLastNRows
+                )
+              );
+            }
+          }
+        }
+
+        await Promise.all(syncPromises);
+        setSaveStatus("✅ Đã lưu và đồng bộ khoảng báo màu");
       } else {
         setSaveStatus("⚠️ Lỗi: " + result.error);
         setError(result.error);
@@ -609,6 +641,8 @@ function App() {
   // Save data without regenerating tables
   const handleSaveData = async () => {
     setSaveStatus("💾 Đang lưu...");
+
+    // Save Q hiện tại
     const result = await savePageData(
       pageId,
       allTValues[0],
@@ -621,7 +655,33 @@ function App() {
     );
 
     if (result.success) {
-      setSaveStatus("✅ Đã lưu dữ liệu thành công");
+      // ⭐ Sync purple range sang tất cả Q1-Q10 (không sync T values)
+      const syncPromises = [];
+      for (let i = 1; i <= 10; i++) {
+        const qId = `q${i}`;
+        if (qId !== pageId) {
+          // Load data của Q này
+          const qResult = await loadPageData(qId);
+          if (qResult.success && qResult.data) {
+            // Chỉ update purple range, giữ nguyên T values của Q đó
+            syncPromises.push(
+              savePageData(
+                qId,
+                qResult.data.t1Values,
+                qResult.data.t2Values,
+                dateValues,
+                deletedRows,
+                purpleRangeFrom, // ⭐ Sync purple range từ Q hiện tại
+                purpleRangeTo, // ⭐ Sync purple range từ Q hiện tại
+                keepLastNRows
+              )
+            );
+          }
+        }
+      }
+
+      await Promise.all(syncPromises);
+      setSaveStatus("✅ Đã lưu và đồng bộ khoảng báo màu");
     } else {
       setSaveStatus("⚠️ Lỗi: " + result.error);
       setError(result.error);

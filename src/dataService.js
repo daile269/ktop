@@ -63,12 +63,14 @@ export const loadPageData = async (pageId) => {
     if (snapshot.exists()) {
       const data = snapshot.val();
       
-      // Pad data về 300 rows
-      const ROWS = 300;
-      const t1 = data.t1Values || [];
-      const t2 = data.t2Values || [];
-      const dates = data.dateValues || [];
-      const deleted = data.deletedRows || [];
+      // Pad data về 366 rows (match với App.jsx)
+      const ROWS = 366;
+      
+      // Ensure data is always an array, even if Firebase returns object or null
+      const t1 = Array.isArray(data.t1Values) ? [...data.t1Values] : [];
+      const t2 = Array.isArray(data.t2Values) ? [...data.t2Values] : [];
+      const dates = Array.isArray(data.dateValues) ? [...data.dateValues] : [];
+      const deleted = Array.isArray(data.deletedRows) ? [...data.deletedRows] : [];
       
       // Pad với empty strings/false
       while (t1.length < ROWS) t1.push('');
@@ -89,7 +91,7 @@ export const loadPageData = async (pageId) => {
         }
       };
     } else {
-
+      console.log(`No data found for ${pageId}, returning null`);
       return { success: true, data: null };
     }
   } catch (error) {
