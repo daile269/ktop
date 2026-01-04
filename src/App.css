@@ -332,9 +332,10 @@ body {
 
 .data-cell {
   border: 2px solid #333;
-  padding: 10px;
+  /* padding: 4px; */
   text-align: center;
   font-size: 35px;
+  line-height: 1; /* Giảm line-height để ô thấp hơn */
   font-weight: 500;
   transition: all 0.15s;
   background: #ffffff;
@@ -349,7 +350,7 @@ body {
 }
 
 .data-cell.value-col {
-  padding: 4px;
+  /* padding: 4px; */
   border-left: 3px solid red !important;
   border-right: 3px solid red !important;
 }
