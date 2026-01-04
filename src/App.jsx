@@ -1518,7 +1518,8 @@ function App() {
                           Thông tin
                         </th>
                         <th colSpan="1" className="group-header">
-                          Thông {tableIndex + 1}
+                          {/* Thông {tableIndex + 1} */}
+                          Thông
                         </th>
                         <th colSpan="10" className="group-header">
                           Tham số
