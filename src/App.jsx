@@ -85,6 +85,18 @@ function App() {
   const [showDeleteByDatesModal, setShowDeleteByDatesModal] = useState(false);
   const [showDeleteLastRowModal, setShowDeleteLastRowModal] = useState(false);
 
+  // State cho purple range settings modal
+  const [showPurpleRangeModal, setShowPurpleRangeModal] = useState(false);
+  const [tempPurpleRangeFrom, setTempPurpleRangeFrom] = useState("");
+  const [tempPurpleRangeTo, setTempPurpleRangeTo] = useState("");
+  const [isSavingPurpleRange, setIsSavingPurpleRange] = useState(false);
+
+  // State cho keep last N rows settings modal
+  const [showKeepLastNRowsSettingsModal, setShowKeepLastNRowsSettingsModal] =
+    useState(false);
+  const [tempKeepLastNRows, setTempKeepLastNRows] = useState("");
+  const [isSavingKeepLastNRows, setIsSavingKeepLastNRows] = useState(false);
+
   // State để lưu thông tin các Q có ô màu vàng
   const [qPurpleInfo, setQPurpleInfo] = useState({}); // {q1: {hasPurple: true, cells: ['3-10', '4-9']}, ...}
 
@@ -1193,6 +1205,130 @@ function App() {
     }
   };
 
+  // Handle save purple range settings
+  const handleSavePurpleRange = async () => {
+    try {
+      // Validate input
+      const from = parseInt(tempPurpleRangeFrom) || 0;
+      const to = parseInt(tempPurpleRangeTo) || 0;
+
+      if (from < 0 || to < 0) {
+        alert("⚠️ Giá trị phải lớn hơn hoặc bằng 0!");
+        return;
+      }
+
+      if (from > to) {
+        alert("⚠️ Giá trị 'Từ' phải nhỏ hơn hoặc bằng 'Đến'!");
+        return;
+      }
+
+      // Set loading state
+      setIsSavingPurpleRange(true);
+
+      // Update state
+      setPurpleRangeFrom(from);
+      setPurpleRangeTo(to);
+
+      // Sync to all Q1-Q10
+      setSaveStatus("💾 Đang đồng bộ...");
+      const syncPromises = [];
+      for (let i = 1; i <= 10; i++) {
+        const qId = `q${i}`;
+        const result = await loadPageData(qId);
+        if (result.success && result.data) {
+          syncPromises.push(
+            savePageData(
+              qId,
+              result.data.t1Values,
+              result.data.t2Values,
+              result.data.dateValues || dateValues,
+              result.data.deletedRows || deletedRows,
+              from,
+              to,
+              result.data.keepLastNRows || keepLastNRows
+            )
+          );
+        }
+      }
+
+      await Promise.all(syncPromises);
+      setSaveStatus("✅ Đã lưu cài đặt báo màu");
+      setTimeout(() => setSaveStatus(""), 2000);
+
+      // Close modal
+      setShowPurpleRangeModal(false);
+      alert(`✅ Đã lưu khoảng báo màu: ${from} - ${to}`);
+    } catch (error) {
+      console.error("Error saving purple range:", error);
+      alert("⚠️ Lỗi khi lưu cài đặt: " + error.message);
+      setSaveStatus("⚠️ Lỗi khi lưu");
+      setTimeout(() => setSaveStatus(""), 2000);
+    } finally {
+      setIsSavingPurpleRange(false);
+    }
+  };
+
+  // Handle save keep last N rows settings
+  const handleSaveKeepLastNRows = async () => {
+    try {
+      // Validate input
+      const n = parseInt(tempKeepLastNRows);
+
+      if (!n || n <= 0) {
+        alert("⚠️ Vui lòng nhập số dòng hợp lệ (lớn hơn 0)!");
+        return;
+      }
+
+      if (n > ROWS) {
+        alert(`⚠️ Số dòng không được vượt quá ${ROWS}!`);
+        return;
+      }
+
+      // Set loading state
+      setIsSavingKeepLastNRows(true);
+
+      // Update state
+      setKeepLastNRows(n);
+
+      // Sync to all Q1-Q10
+      setSaveStatus("💾 Đang đồng bộ...");
+      const syncPromises = [];
+      for (let i = 1; i <= 10; i++) {
+        const qId = `q${i}`;
+        const result = await loadPageData(qId);
+        if (result.success && result.data) {
+          syncPromises.push(
+            savePageData(
+              qId,
+              result.data.t1Values,
+              result.data.t2Values,
+              result.data.dateValues || dateValues,
+              result.data.deletedRows || deletedRows,
+              result.data.purpleRangeFrom || purpleRangeFrom,
+              result.data.purpleRangeTo || purpleRangeTo,
+              n
+            )
+          );
+        }
+      }
+
+      await Promise.all(syncPromises);
+      setSaveStatus("✅ Đã lưu cài đặt dòng tồn tại");
+      setTimeout(() => setSaveStatus(""), 2000);
+
+      // Close modal
+      setShowKeepLastNRowsSettingsModal(false);
+      alert(`✅ Đã lưu cài đặt: ${n} dòng tồn tại`);
+    } catch (error) {
+      console.error("Error saving keep last N rows:", error);
+      alert("⚠️ Lỗi khi lưu cài đặt: " + error.message);
+      setSaveStatus("⚠️ Lỗi khi lưu");
+      setTimeout(() => setSaveStatus(""), 2000);
+    } finally {
+      setIsSavingKeepLastNRows(false);
+    }
+  };
+
   return (
     <div className="app-container-full">
       {/* PMA Title */}
@@ -1229,30 +1365,31 @@ function App() {
               backgroundColor: "#e8f5e9",
             }}
           >
-            <button
+            {/* <button
               onClick={handleAddRow}
               className="toolbar-button success"
               style={{ marginLeft: "10px", marginRight: "18px" }}
             >
               ➕ Thêm
-            </button>
-            <button
-              onClick={handleInputAllQ}
-              className="toolbar-button primary"
-            >
-              📥 Nhập liệu
-            </button>
-            <button onClick={clearColumnHighlights} className="toolbar-button">
-              🔄 Xóa màu dòng cột thông
-            </button>
-            <button onClick={handleSaveData} className="toolbar-button success">
-              💾 Lưu dữ liệu
-            </button>
+            </button> */}
             <button
               onClick={() => setShowDeleteModal(true)}
               className="toolbar-button danger"
             >
               🗑️ Xóa dữ liệu
+            </button>
+            <button onClick={clearColumnHighlights} className="toolbar-button">
+              🔄 X màu d.c
+            </button>
+            <button onClick={handleSaveData} className="toolbar-button success">
+              💾 Lưu dữ liệu
+            </button>
+
+            <button
+              onClick={handleInputAllQ}
+              className="toolbar-button primary"
+            >
+              📥 Nhập liệu
             </button>
           </div>
 
@@ -1265,44 +1402,48 @@ function App() {
               gap: "8px",
               border: "3px solid #007bff",
               borderRadius: "8px",
-              padding: "10px 15px",
+              padding: "10px 12px",
               backgroundColor: "#e7f3ff",
             }}
           >
-            <label style={{ fontSize: "28px", fontWeight: "bold" }}>
+            <label style={{ fontSize: "25px", fontWeight: "bold" }}>
               Báo màu:
             </label>
-            <input
-              type="number"
-              value={purpleRangeFrom}
-              onChange={(e) => setPurpleRangeFrom(e.target.value)}
-              placeholder="Từ"
-              min="0"
+            <span
               style={{
-                width: "70px",
-                padding: "6px",
-                fontSize: "28px",
+                fontSize: "25px",
+                fontWeight: "600",
+                color: "#333",
+                padding: "6px 12px",
+                backgroundColor: "#fff",
                 border: "2px solid #ffc107",
                 borderRadius: "4px",
+                minWidth: "120px",
                 textAlign: "center",
               }}
-            />
-            <span style={{ fontSize: "28px" }}>đến</span>
-            <input
-              type="number"
-              value={purpleRangeTo}
-              onChange={(e) => setPurpleRangeTo(e.target.value)}
-              placeholder="Đến"
-              min="0"
+            >
+              {purpleRangeFrom || 0} - {purpleRangeTo || 0}
+            </span>
+            <button
+              onClick={() => {
+                setTempPurpleRangeFrom(purpleRangeFrom);
+                setTempPurpleRangeTo(purpleRangeTo);
+                setShowPurpleRangeModal(true);
+              }}
+              className="toolbar-button"
               style={{
-                width: "70px",
-                padding: "6px",
-                fontSize: "28px",
-                border: "2px solid #ffc107",
+                fontSize: "20px",
+                padding: "6px 12px",
+                backgroundColor: "#6c757d",
+                color: "white",
+                border: "none",
                 borderRadius: "4px",
-                textAlign: "center",
+                cursor: "pointer",
               }}
-            />
+              title="Cài đặt khoảng báo màu"
+            >
+              ⚙️
+            </button>
           </div>
 
           {/* Dòng tồn tại Control */}
@@ -1318,36 +1459,42 @@ function App() {
               backgroundColor: "#e7f3ff",
             }}
           >
-            <label style={{ fontSize: "18px", fontWeight: "bold" }}>
+            <label style={{ fontSize: "25px", fontWeight: "bold" }}>
               📊 Dòng tồn tại:
             </label>
-            <input
-              type="number"
-              value={keepLastNRows}
-              onChange={(e) => setKeepLastNRows(e.target.value)}
-              min="1"
-              max={ROWS}
+            <span
               style={{
-                width: "70px",
-                padding: "6px",
-                fontSize: "18px",
+                fontSize: "25px",
+                fontWeight: "600",
+                color: "#333",
+                padding: "6px 12px",
+                backgroundColor: "#fff",
                 border: "2px solid #007bff",
                 borderRadius: "4px",
+                minWidth: "80px",
                 textAlign: "center",
               }}
-            />
+            >
+              {keepLastNRows || 0}
+            </span>
             <button
               onClick={() => {
-                if (!keepLastNRows || keepLastNRows <= 0) {
-                  alert("⚠️ Vui lòng nhập số dòng hợp lệ!");
-                  return;
-                }
-                setShowKeepLastNRowsModal(true);
+                setTempKeepLastNRows(keepLastNRows);
+                setShowKeepLastNRowsSettingsModal(true);
               }}
-              className="toolbar-button primary"
-              style={{ fontSize: "16px", padding: "6px 12px" }}
+              className="toolbar-button"
+              style={{
+                fontSize: "20px",
+                padding: "6px 12px",
+                backgroundColor: "#6c757d",
+                color: "white",
+                border: "none",
+                borderRadius: "4px",
+                cursor: "pointer",
+              }}
+              title="Cài đặt số dòng tồn tại"
             >
-              ✓ Áp dụng
+              ⚙️
             </button>
           </div>
 
@@ -1392,7 +1539,7 @@ function App() {
                       ? "2px solid #357abd"
                       : "1px solid #d0d0d0",
                     padding: "6px 12px",
-                    fontSize: "35px",
+                    fontSize: "30px",
                     minWidth: "50px",
                   }}
                   title={
@@ -1413,28 +1560,6 @@ function App() {
               );
             })}
           </div>
-
-          {/* Purple Cells Info Display */}
-          {allTableData.length > 0 && (
-            <div
-              style={{
-                marginLeft: "12px",
-                padding: "8px 16px",
-                backgroundColor: "#fff3cd",
-                border: "2px solid #ffc107",
-                borderRadius: "6px",
-                fontSize: "30px",
-                fontWeight: "bold",
-                maxWidth: "1100px",
-                overflow: "auto",
-                whiteSpace: "nowrap",
-              }}
-              title="Các ô đang được báo màu vàng trong Q này"
-            >
-              📍 MQ{pageId.replace("q", "")}: {formatPurpleCellsInfo()}
-            </div>
-          )}
-
           {/* Go To Table */}
           <div
             className="toolbar-group"
@@ -1477,6 +1602,26 @@ function App() {
               ➡️ Đến
             </button>
           </div>
+          {/* Purple Cells Info Display */}
+          {allTableData.length > 0 && (
+            <div
+              style={{
+                marginLeft: "12px",
+                padding: "8px 16px",
+                backgroundColor: "#fff3cd",
+                border: "2px solid #ffc107",
+                borderRadius: "6px",
+                fontSize: "30px",
+                fontWeight: "bold",
+                maxWidth: "1100px",
+                overflow: "auto",
+                whiteSpace: "nowrap",
+              }}
+              title="Các ô đang được báo màu vàng trong Q này"
+            >
+              📍 MQ{pageId.replace("q", "")}: {formatPurpleCellsInfo()}
+            </div>
+          )}
 
           {/* Status Messages */}
           <div className="toolbar-group">
@@ -2153,6 +2298,232 @@ function App() {
                 style={{ fontSize: "18px", padding: "12px 24px" }}
               >
                 Xác nhận xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Purple Range Settings Modal */}
+      {showPurpleRangeModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowPurpleRangeModal(false)}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "500px", width: "90%" }}
+          >
+            <div className="modal-header">
+              <h3 style={{ fontSize: "35px" }}>⚙️ Cài đặt khoảng báo màu</h3>
+            </div>
+
+            <div className="modal-body">
+              <div className="form-group">
+                <label
+                  style={{
+                    fontSize: "35px",
+                    fontWeight: "bold",
+                    marginBottom: "8px",
+                    display: "block",
+                  }}
+                >
+                  Từ:
+                </label>
+                <input
+                  type="number"
+                  value={tempPurpleRangeFrom}
+                  onChange={(e) => setTempPurpleRangeFrom(e.target.value)}
+                  placeholder="Nhập giá trị từ"
+                  min="0"
+                  disabled={isSavingPurpleRange}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    fontSize: "35px",
+                    border: "2px solid #ffc107",
+                    borderRadius: "6px",
+                    textAlign: "center",
+                    cursor: isSavingPurpleRange ? "not-allowed" : "text",
+                    opacity: isSavingPurpleRange ? 0.6 : 1,
+                  }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginTop: "20px" }}>
+                <label
+                  style={{
+                    fontSize: "35px",
+                    fontWeight: "bold",
+                    marginBottom: "8px",
+                    display: "block",
+                  }}
+                >
+                  Đến:
+                </label>
+                <input
+                  type="number"
+                  value={tempPurpleRangeTo}
+                  onChange={(e) => setTempPurpleRangeTo(e.target.value)}
+                  placeholder="Nhập giá trị đến"
+                  min="0"
+                  disabled={isSavingPurpleRange}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    fontSize: "35px",
+                    border: "2px solid #ffc107",
+                    borderRadius: "6px",
+                    textAlign: "center",
+                    cursor: isSavingPurpleRange ? "not-allowed" : "text",
+                    opacity: isSavingPurpleRange ? 0.6 : 1,
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  marginTop: "20px",
+                  padding: "12px",
+                  backgroundColor: "#fff3cd",
+                  border: "1px solid #ffc107",
+                  borderRadius: "6px",
+                  fontSize: "16px",
+                  color: "#856404",
+                }}
+              >
+                💡 <strong>Lưu ý:</strong> Các ô có giá trị trong khoảng này sẽ
+                được tô màu vàng để báo hiệu.
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowPurpleRangeModal(false)}
+                disabled={isSavingPurpleRange}
+                style={{
+                  fontSize: "18px",
+                  padding: "12px 24px",
+                  cursor: isSavingPurpleRange ? "not-allowed" : "pointer",
+                  opacity: isSavingPurpleRange ? 0.6 : 1,
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn-delete"
+                onClick={handleSavePurpleRange}
+                disabled={isSavingPurpleRange}
+                style={{
+                  fontSize: "18px",
+                  padding: "12px 24px",
+                  backgroundColor: isSavingPurpleRange ? "#6c757d" : "#28a745",
+                  cursor: isSavingPurpleRange ? "not-allowed" : "pointer",
+                  opacity: isSavingPurpleRange ? 0.7 : 1,
+                }}
+              >
+                {isSavingPurpleRange ? "⏳ Đang lưu..." : "💾 Lưu"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Keep Last N Rows Settings Modal */}
+      {showKeepLastNRowsSettingsModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowKeepLastNRowsSettingsModal(false)}
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "500px", width: "90%" }}
+          >
+            <div className="modal-header">
+              <h3 style={{ fontSize: "35px" }}>⚙️ Cài đặt số dòng tồn tại</h3>
+            </div>
+
+            <div className="modal-body">
+              <div className="form-group">
+                <label
+                  style={{
+                    fontSize: "35px",
+                    fontWeight: "bold",
+                    marginBottom: "8px",
+                    display: "block",
+                  }}
+                >
+                  Số dòng:
+                </label>
+                <input
+                  type="number"
+                  value={tempKeepLastNRows}
+                  onChange={(e) => setTempKeepLastNRows(e.target.value)}
+                  placeholder="Nhập số dòng tồn tại"
+                  min="1"
+                  max={ROWS}
+                  disabled={isSavingKeepLastNRows}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    fontSize: "35px",
+                    border: "2px solid #007bff",
+                    borderRadius: "6px",
+                    textAlign: "center",
+                    cursor: isSavingKeepLastNRows ? "not-allowed" : "text",
+                    opacity: isSavingKeepLastNRows ? 0.6 : 1,
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  marginTop: "20px",
+                  padding: "12px",
+                  backgroundColor: "#d1ecf1",
+                  border: "1px solid #007bff",
+                  borderRadius: "6px",
+                  fontSize: "16px",
+                  color: "#0c5460",
+                }}
+              >
+                💡 <strong>Lưu ý:</strong> Đây là số dòng tối đa được lưu trữ
+                trong hệ thống.
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn-cancel"
+                onClick={() => setShowKeepLastNRowsSettingsModal(false)}
+                disabled={isSavingKeepLastNRows}
+                style={{
+                  fontSize: "18px",
+                  padding: "12px 24px",
+                  cursor: isSavingKeepLastNRows ? "not-allowed" : "pointer",
+                  opacity: isSavingKeepLastNRows ? 0.6 : 1,
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                className="btn-delete"
+                onClick={handleSaveKeepLastNRows}
+                disabled={isSavingKeepLastNRows}
+                style={{
+                  fontSize: "18px",
+                  padding: "12px 24px",
+                  backgroundColor: isSavingKeepLastNRows
+                    ? "#6c757d"
+                    : "#28a745",
+                  cursor: isSavingKeepLastNRows ? "not-allowed" : "pointer",
+                  opacity: isSavingKeepLastNRows ? 0.7 : 1,
+                }}
+              >
+                {isSavingKeepLastNRows ? "⏳ Đang lưu..." : "💾 Lưu"}
               </button>
             </div>
           </div>
