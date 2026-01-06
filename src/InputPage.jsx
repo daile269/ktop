@@ -227,13 +227,13 @@ function InputPage() {
           <span
             style={{
               fontSize: "18px",
-              fontWeight: "normal",
-              color: "#666",
-              fontStyle: "normal",
+              fontWeight: "bold",
+              color: "#333",
+              fontStyle: "italic",
               marginLeft: "8px",
             }}
           >
-            Chủ nhiệm dự án: Mai Kiên - SĐT: 0964636709, email:
+            Chủ nhiệm: Mai Kiên - SĐT: 0964636709, email:
             maikien06091966@gmail.com
           </span>
         </h1>
