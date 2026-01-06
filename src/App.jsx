@@ -1279,10 +1279,10 @@ function App() {
         return;
       }
 
-      if (n > ROWS) {
-        alert(`⚠️ Số dòng không được vượt quá ${ROWS}!`);
-        return;
-      }
+      // if (n > ROWS) {
+      //   alert(`⚠️ Số dòng không được vượt quá ${ROWS}!`);
+      //   return;
+      // }
 
       // Set loading state
       setIsSavingKeepLastNRows(true);
