@@ -1352,14 +1352,14 @@ function App() {
           Dự án cải tạo môi trường thềm lục địa biển Việt Nam -
           <span
             style={{
-              fontSize: "14px",
+              fontSize: "18px",
               fontWeight: "normal",
               color: "#666",
               fontStyle: "normal",
               marginLeft: "8px",
             }}
           >
-            Thiết kế và vận hành: Mai Kiên - SĐT: 0964636709, email:
+            Chủ nhiệm dự án: Mai Kiên - SĐT: 0964636709, email:
             maikien06091966@gmail.com
           </span>
         </h1>
