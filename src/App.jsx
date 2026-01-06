@@ -186,7 +186,7 @@ function App() {
     const entries = Object.entries(purpleCells);
 
     if (entries.length === 0) {
-      return "Không có bảng nào được báo màu";
+      return "Không có bảng nào được BM";
     }
 
     // Chỉ hiển thị tên các bảng T, không hiển thị chi tiết ô
@@ -1515,7 +1515,7 @@ function App() {
             className="toolbar-group"
             style={{ display: "flex", gap: "8px", alignItems: "center" }}
           >
-            <label style={{ fontSize: "35px", fontWeight: "bold" }}>Q:</label>
+            {/* <label style={{ fontSize: "35px", fontWeight: "bold" }}>Q:</label> */}
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
               const qId = `q${num}`;
               const hasPurple = qPurpleInfo[qId]?.hasPurple;
@@ -1572,6 +1572,37 @@ function App() {
               );
             })}
           </div>
+          {/* Purple Cells Info Display */}
+          {allTableData.length > 0 && (
+            <div
+              style={{
+                marginLeft: "12px",
+                padding: "8px 12px",
+                backgroundColor: "#fff3cd",
+                border: "2px solid #ffc107",
+                borderRadius: "6px",
+                fontSize: "24px",
+                fontWeight: "bold",
+                maxWidth: "1100px",
+                overflow: "auto",
+                whiteSpace: "nowrap",
+              }}
+              title="Các ô đang được báo màu vàng trong Q này"
+            >
+              📍 MQ{pageId.replace("q", "")}: {formatPurpleCellsInfo()}
+            </div>
+          )}
+
+          {/* Status Messages */}
+          <div className="toolbar-group">
+            {isLoading && (
+              <span className="status-loading">⏳ Đang tải...</span>
+            )}
+            {!isLoading && saveStatus && (
+              <span className="status-success">{saveStatus}</span>
+            )}
+            {error && <span className="status-error">{error}</span>}
+          </div>
           {/* Go To Table */}
           <div
             className="toolbar-group"
@@ -1579,13 +1610,11 @@ function App() {
               marginLeft: "12px",
               border: "3px solid #28a745",
               borderRadius: "8px",
-              padding: "10px 15px",
+              padding: "5px 12px",
               backgroundColor: "#e8f5e9",
             }}
           >
-            <label style={{ fontSize: "18px", fontWeight: "bold" }}>
-              Đi đến Thông:
-            </label>
+            {/* <label style={{ fontSize: "18px", fontWeight: "bold" }}>Xem:</label> */}
             <input
               type="number"
               value={goToTableNumber}
@@ -1611,39 +1640,8 @@ function App() {
               className="toolbar-button primary"
               style={{ fontSize: "18px", padding: "8px 16px" }}
             >
-              ➡️ Đến
+              Xem
             </button>
-          </div>
-          {/* Purple Cells Info Display */}
-          {allTableData.length > 0 && (
-            <div
-              style={{
-                marginLeft: "12px",
-                padding: "8px 16px",
-                backgroundColor: "#fff3cd",
-                border: "2px solid #ffc107",
-                borderRadius: "6px",
-                fontSize: "30px",
-                fontWeight: "bold",
-                maxWidth: "1100px",
-                overflow: "auto",
-                whiteSpace: "nowrap",
-              }}
-              title="Các ô đang được báo màu vàng trong Q này"
-            >
-              📍 MQ{pageId.replace("q", "")}: {formatPurpleCellsInfo()}
-            </div>
-          )}
-
-          {/* Status Messages */}
-          <div className="toolbar-group">
-            {isLoading && (
-              <span className="status-loading">⏳ Đang tải...</span>
-            )}
-            {!isLoading && saveStatus && (
-              <span className="status-success">{saveStatus}</span>
-            )}
-            {error && <span className="status-error">{error}</span>}
           </div>
         </div>
       </div>
