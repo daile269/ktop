@@ -1349,7 +1349,7 @@ function App() {
             color: "#333",
           }}
         >
-          Phần mềm hỗ trợ dự án cải tạo môi trường biển Việt Nam
+          Phần mềm hỗ trợ dự án cải tạo môi trường thềm lục địa biển Việt Nam
         </h1>
       </div>
       {/* Top Toolbar - Chứa tất cả controls */}
@@ -1667,7 +1667,8 @@ function App() {
                           Thông
                         </th>
                         <th colSpan="10" className="group-header">
-                          Tham số
+                          Tham số: áp suất nước-nhiệt độ- độ ph- tỷ phần sinh
+                          hóa- mùa- f sinh học
                         </th>
                       </tr>
                       <tr>

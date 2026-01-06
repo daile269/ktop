@@ -553,8 +553,8 @@ body {
 
 .table-section {
   flex: 0 0 auto; /* Không co lại */
-  min-width: 1200px; /* Width tối thiểu để giữ nguyên chiều rộng */
-  width: 1200px; /* Width cố định */
+  min-width: 1300px; /* Width tối thiểu để giữ nguyên chiều rộng */
+  width: 1300px; /* Width cố định */
 }
 
 .table-title {

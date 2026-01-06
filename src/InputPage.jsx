@@ -223,7 +223,7 @@ function InputPage() {
             color: "#333",
           }}
         >
-          Phần mềm hỗ trợ dự án cải tạo môi trường biển Việt Nam
+          Phần mềm hỗ trợ dự án cải tạo môi trường thềm lục địa biển Việt Nam
         </h1>
       </div>
       <div className="app-container">
