@@ -1359,8 +1359,7 @@ function App() {
               marginLeft: "8px",
             }}
           >
-            Chủ nhiệm: Mai Kiên - SĐT: 0964636709, email:
-            maikien06091966@gmail.com
+            Mai Kiên - SĐT: 0964636709, email: maikien06091966@gmail.com
           </span>
         </h1>
       </div>
