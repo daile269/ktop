@@ -1,12 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import "./TopToolbar.css";
-import {
-  savePageData,
-  loadPageData,
-  deletePageData,
-  migrateFromLocalStorage,
-} from "./dataService";
+import { savePageData, loadPageData, deletePageData } from "./dataService";
 import InputPage from "./InputPage";
 
 function App() {
@@ -296,16 +291,11 @@ function App() {
 
           // useEffect sẽ tự động regenerate khi purpleRange thay đổi
         } else if (!result.success) {
-          // Lỗi khi load từ Firestore, thử localStorage
+          // Lỗi khi load từ MongoDB
+          console.error("Lỗi khi load data:", result.error);
         } else {
-          // Không có dữ liệu, thử migrate từ localStorage
-
-          const migrateResult = await migrateFromLocalStorage(pageId);
-          if (migrateResult.success) {
-            // Load lại sau khi migrate
-            loadData();
-          } else {
-          }
+          // Không có dữ liệu - đây là Q mới
+          console.log(`Không có dữ liệu cho ${pageId}`);
         }
       } catch (error) {
         console.error("Lỗi khi load từ Firestore:", error);
