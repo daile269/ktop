@@ -273,7 +273,7 @@ body {
   flex: 1;
   overflow: auto;
   background: #fafafa;
-  max-height: calc(100vh - 260px); /* Chiều cao viewport trừ đi toolbar (~150px) */
+  max-height: calc(100vh - 300px); /* Chiều cao viewport trừ đi toolbar (~150px) */
   padding-bottom: 50px; /* Thêm padding để không bị cắt phần cuối */
 }
 

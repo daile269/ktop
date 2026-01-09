@@ -220,7 +220,7 @@ function InputPage() {
             fontWeight: "bold",
             fontStyle: "italic",
             margin: "0",
-            color: "#333",
+            color: "#cf3535ff",
           }}
         >
           Dự án cải tạo môi trường thềm lục địa biển Việt Nam -
@@ -228,7 +228,7 @@ function InputPage() {
             style={{
               fontSize: "18px",
               fontWeight: "bold",
-              color: "#333",
+              color: "#cf3535ff",
               fontStyle: "italic",
               marginLeft: "8px",
             }}
