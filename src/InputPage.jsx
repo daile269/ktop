@@ -350,26 +350,15 @@ function InputPage() {
                   <th rowSpan="2">STT</th>
                   <th rowSpan="2">Ngày</th>
                   {Array.from({ length: 10 }, (_, qIndex) => {
-                    // Màu background khác nhau cho mỗi Q
-                    const colors = [
-                      "#e3f2fd", // Q1 - xanh nhạt
-                      "#f3e5f5", // Q2 - tím nhạt
-                      "#fff3e0", // Q3 - cam nhạt
-                      "#e8f5e9", // Q4 - xanh lá nhạt
-                      "#fce4ec", // Q5 - hồng nhạt
-                      "#e0f2f1", // Q6 - xanh lơ nhạt
-                      "#fff9c4", // Q7 - vàng nhạt
-                      "#f1f8e9", // Q8 - xanh lá nhạt 2
-                      "#ede7f6", // Q9 - tím nhạt 2
-                      "#ffebee", // Q10 - đỏ nhạt
-                    ];
+                    // Màu background: Q lẻ màu ghi nhạt, Q chẵn màu xanh nhạt
+                    const color = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd"; // Q lẻ (index 0,2,4,6,8) = ghi, Q chẵn (index 1,3,5,7,9) = xanh
 
                     return (
                       <th
                         key={qIndex}
                         colSpan="2"
                         style={{
-                          backgroundColor: colors[qIndex],
+                          backgroundColor: color,
                           borderLeft: "3px solid red",
                           borderRight: "3px solid red",
                         }}
@@ -381,25 +370,14 @@ function InputPage() {
                 </tr>
                 <tr>
                   {Array.from({ length: 10 }, (_, qIndex) => {
-                    const colors = [
-                      "#e3f2fd",
-                      "#f3e5f5",
-                      "#fff3e0",
-                      "#e8f5e9",
-                      "#fce4ec",
-                      "#e0f2f1",
-                      "#fff9c4",
-                      "#f1f8e9",
-                      "#ede7f6",
-                      "#ffebee",
-                    ];
+                    const color = qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd"; // Q lẻ = ghi, Q chẵn = xanh
 
                     return (
                       <>
                         <th
                           key={`t1-${qIndex}`}
                           style={{
-                            backgroundColor: colors[qIndex],
+                            backgroundColor: color,
                             borderLeft: "3px solid red",
                           }}
                         >
@@ -408,7 +386,7 @@ function InputPage() {
                         <th
                           key={`t2-${qIndex}`}
                           style={{
-                            backgroundColor: colors[qIndex],
+                            backgroundColor: color,
                             borderRight: "3px solid red",
                           }}
                         >
@@ -452,25 +430,15 @@ function InputPage() {
                         </td>
 
                         {Array.from({ length: 10 }, (_, qIndex) => {
-                          const colors = [
-                            "#e3f2fd",
-                            "#f3e5f5",
-                            "#fff3e0",
-                            "#e8f5e9",
-                            "#fce4ec",
-                            "#e0f2f1",
-                            "#fff9c4",
-                            "#f1f8e9",
-                            "#ede7f6",
-                            "#ffebee",
-                          ];
+                          const color =
+                            qIndex % 2 === 0 ? "#e0e0e0" : "#e3f2fd"; // Q lẻ = ghi, Q chẵn = xanh
 
                           return (
                             <>
                               <td
                                 key={`t1-${qIndex}`}
                                 style={{
-                                  backgroundColor: colors[qIndex],
+                                  backgroundColor: color,
                                   borderLeft: "3px solid red",
                                 }}
                               >
@@ -495,7 +463,7 @@ function InputPage() {
                               <td
                                 key={`t2-${qIndex}`}
                                 style={{
-                                  backgroundColor: colors[qIndex],
+                                  backgroundColor: color,
                                   borderRight: "3px solid red",
                                 }}
                               >
