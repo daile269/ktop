@@ -24,12 +24,12 @@ function App() {
   const [allTableData, setAllTableData] = useState(
     Array(TOTAL_TABLES)
       .fill(null)
-      .map(() => [])
+      .map(() => []),
   );
   const [allTValues, setAllTValues] = useState(
     Array(TOTAL_TABLES)
       .fill(null)
-      .map(() => Array(ROWS).fill(""))
+      .map(() => Array(ROWS).fill("")),
   );
   const [dateValues, setDateValues] = useState(Array(ROWS).fill("")); // Lưu ngày tháng cho mỗi row
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -569,7 +569,7 @@ function App() {
       // Gen bảng dữ liệu cho table này
       const tableData = generateTableData(
         newAllTValues[tableIndex],
-        `T${tableIndex + 1}`
+        `T${tableIndex + 1}`,
       );
       newAllTableData.push(tableData);
     }
@@ -602,7 +602,7 @@ function App() {
         deletedRows,
         purpleRangeFrom,
         purpleRangeTo,
-        keepLastNRows
+        keepLastNRows,
       );
 
       if (result.success) {
@@ -622,8 +622,8 @@ function App() {
                   deletedRows,
                   purpleRangeFrom, // ⭐ Sync purple range
                   purpleRangeTo, // ⭐ Sync purple range
-                  keepLastNRows
-                )
+                  keepLastNRows,
+                ),
               );
             }
           }
@@ -653,7 +653,7 @@ function App() {
       deletedRows,
       purpleRangeFrom,
       purpleRangeTo,
-      keepLastNRows
+      keepLastNRows,
     );
 
     if (result.success) {
@@ -675,8 +675,8 @@ function App() {
                 deletedRows,
                 purpleRangeFrom, // ⭐ Sync purple range từ Q hiện tại
                 purpleRangeTo, // ⭐ Sync purple range từ Q hiện tại
-                keepLastNRows
-              )
+                keepLastNRows,
+              ),
             );
           }
         }
@@ -822,8 +822,8 @@ function App() {
             newDeletedRows, // Sync deletedRows mới
             purpleRangeFrom,
             purpleRangeTo,
-            keepLastNRows
-          )
+            keepLastNRows,
+          ),
         );
       }
     }
@@ -843,19 +843,12 @@ function App() {
     window.location.reload();
   };
 
-  // Keep last N rows - hide all rows except last N rows with data
-  const handleKeepLastNRows = async () => {
-    const n = parseInt(keepLastNRows);
-
+  // Function to apply the 'Keep last N rows' rule
+  const applyKeepLastNRows = async (n) => {
     if (!n || n <= 0) {
       alert("⚠️ Vui lòng nhập số dòng hợp lệ (> 0)");
       return;
     }
-
-    // if (n > ROWS) {
-    //   alert(`⚠️ Số dòng không được vượt quá ${ROWS}`);
-    //   return;
-    // }
 
     // Find all NON-DELETED rows with data
     const nonDeletedRowsWithData = [];
@@ -889,7 +882,6 @@ function App() {
           newDeletedRows[i] = true;
         }
       }
-      // Các dòng đã xóa (deletedRows[i] = true) thì KHÔNG đụng vào
     }
 
     setDeletedRows(newDeletedRows);
@@ -910,8 +902,8 @@ function App() {
             newDeletedRows,
             purpleRangeFrom,
             purpleRangeTo,
-            keepLastNRows
-          )
+            n, // Use the new n
+          ),
         );
       }
     }
@@ -921,6 +913,12 @@ function App() {
     setTimeout(() => setSaveStatus(""), 2000);
 
     alert(`✅ Đã xóa các dòng cũ, giữ lại ${n} dòng cuối cùng!`);
+  };
+
+  // Keep last N rows - handler for the button
+  const handleKeepLastNRows = async () => {
+    const n = parseInt(keepLastNRows);
+    await applyKeepLastNRows(n);
   };
 
   // Delete last visible row - XÓA THẬT SỰ khỏi DB
@@ -989,8 +987,8 @@ function App() {
             newDeletedRows,
             purpleRangeFrom,
             purpleRangeTo,
-            keepLastNRows
-          )
+            keepLastNRows,
+          ),
         );
       }
     }
@@ -1044,8 +1042,8 @@ function App() {
             newDeletedRows,
             purpleRangeFrom,
             purpleRangeTo,
-            keepLastNRows
-          )
+            keepLastNRows,
+          ),
         );
       }
     }
@@ -1099,14 +1097,14 @@ function App() {
       setAllTValues(
         Array(TOTAL_TABLES)
           .fill(null)
-          .map(() => Array(ROWS).fill(""))
+          .map(() => Array(ROWS).fill("")),
       );
       setDateValues(Array(ROWS).fill(""));
       setDeletedRows(Array(ROWS).fill(false));
       setAllTableData(
         Array(TOTAL_TABLES)
           .fill(null)
-          .map(() => [])
+          .map(() => []),
       );
       setIsDataLoaded(false);
 
@@ -1151,7 +1149,7 @@ function App() {
         newDeletedRows,
         purpleRangeFrom,
         purpleRangeTo,
-        keepLastNRows
+        keepLastNRows,
       );
 
       // Sync deletedRows sang Q1-Q10
@@ -1168,7 +1166,7 @@ function App() {
               newDeletedRows,
               purpleRangeFrom,
               purpleRangeTo,
-              keepLastNRows
+              keepLastNRows,
             );
           }
         }
@@ -1177,7 +1175,7 @@ function App() {
       if (result.success) {
         setSaveStatus("✅ Đã lưu dữ liệu thành công");
         alert(
-          `✅ Đã xóa ${deletedCount} dòng từ ${deleteDateFrom} đến ${deleteDateTo} (đồng bộ Q1-Q10)!`
+          `✅ Đã xóa ${deletedCount} dòng từ ${deleteDateFrom} đến ${deleteDateTo} (đồng bộ Q1-Q10)!`,
         );
       } else {
         setSaveStatus("⚠️ Lỗi: " + result.error);
@@ -1235,8 +1233,8 @@ function App() {
               result.data.deletedRows || deletedRows,
               from,
               to,
-              result.data.keepLastNRows || keepLastNRows
-            )
+              result.data.keepLastNRows || keepLastNRows,
+            ),
           );
         }
       }
@@ -1269,18 +1267,13 @@ function App() {
         return;
       }
 
-      // if (n > ROWS) {
-      //   alert(`⚠️ Số dòng không được vượt quá ${ROWS}!`);
-      //   return;
-      // }
-
       // Set loading state
       setIsSavingKeepLastNRows(true);
 
       // Update state
       setKeepLastNRows(n);
 
-      // Sync to all Q1-Q10
+      // Sync the setting to all Q1-Q10
       setSaveStatus("💾 Đang đồng bộ...");
       const syncPromises = [];
       for (let i = 1; i <= 10; i++) {
@@ -1296,19 +1289,26 @@ function App() {
               result.data.deletedRows || deletedRows,
               result.data.purpleRangeFrom || purpleRangeFrom,
               result.data.purpleRangeTo || purpleRangeTo,
-              n
-            )
+              n,
+            ),
           );
         }
       }
 
       await Promise.all(syncPromises);
       setSaveStatus("✅ Đã lưu cài đặt dòng tồn tại");
-      setTimeout(() => setSaveStatus(""), 2000);
 
       // Close modal
       setShowKeepLastNRowsSettingsModal(false);
-      alert(`✅ Đã lưu cài đặt: ${n} dòng tồn tại`);
+
+      // Ask to apply immediately
+      if (
+        confirm(
+          `✅ Đã lưu cài đặt: ${n} dòng tồn tại.\n\nBạn có muốn thực hiện xóa các dòng cũ để CHỈ GIỮ LẠI ${n} dòng cuối cùng ngay bây giờ không?`,
+        )
+      ) {
+        await applyKeepLastNRows(n);
+      }
     } catch (error) {
       console.error("Error saving keep last N rows:", error);
       alert("⚠️ Lỗi khi lưu cài đặt: " + error.message);
@@ -1555,8 +1555,8 @@ function App() {
                   {hasPurple && !isViewed
                     ? " BM"
                     : hasPurple && isViewed
-                    ? " ĐX"
-                    : ""}
+                      ? " ĐX"
+                      : ""}
                 </button>
               );
             })}
@@ -1659,7 +1659,7 @@ function App() {
                     <thead>
                       <tr>
                         <th colSpan="3" className="group-header">
-                          Thông tin
+                          Q{pageId.replace("q", "")}
                         </th>
                         <th colSpan="1" className="group-header">
                           {/* Thông {tableIndex + 1} */}
@@ -1726,8 +1726,8 @@ function App() {
                                             result.data.deletedRows || [],
                                             purpleRangeFrom,
                                             purpleRangeTo,
-                                            keepLastNRows
-                                          )
+                                            keepLastNRows,
+                                          ),
                                         );
                                       }
                                     }
@@ -1737,7 +1737,7 @@ function App() {
                                     width: "100%",
                                     border: "none",
                                     background: "transparent",
-                                    fontSize: "20px",
+                                    fontSize: "23px",
                                     padding: "4px",
                                   }}
                                 />
@@ -1757,7 +1757,7 @@ function App() {
                                   handleCellDoubleClick(
                                     tableIndex,
                                     rowIndex,
-                                    -1
+                                    -1,
                                   )
                                 }
                               >
@@ -1769,7 +1769,7 @@ function App() {
                                     handleTValueChange(
                                       tableIndex,
                                       rowIndex,
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                   disabled={tableIndex >= 2}
@@ -1789,14 +1789,14 @@ function App() {
                                       handleCellClick(
                                         tableIndex,
                                         rowIndex,
-                                        colIndex
+                                        colIndex,
                                       )
                                     }
                                     onDoubleClick={() =>
                                       handleCellDoubleClick(
                                         tableIndex,
                                         rowIndex,
-                                        colIndex
+                                        colIndex,
                                       )
                                     }
                                   >
