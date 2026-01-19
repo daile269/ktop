@@ -39,8 +39,8 @@ function App() {
   const [error, setError] = useState("");
 
   // State cho highlight cells, rows và T-columns
-  const [highlightedCells, setHighlightedCells] = useState({}); // {tableIndex: {rowIndex: {colIndex: true}}}
-  const [highlightedRows, setHighlightedRows] = useState({}); // {tableIndex: {rowIndex: true}}
+  const [highlightedRows, setHighlightedRows] = useState({}); // {tableIndex: {rowIndex: true}} - Highlight độc lập từng bảng
+  const [highlightedCells, setHighlightedCells] = useState({}); // {tableIndex: {rowIndex: {colIndex: true}}} - Highlight từng ô lẻ
   const [highlightedTColumns, setHighlightedTColumns] = useState({}); // {tableIndex: true} - Highlight cột T (Thông số)
 
   // State cho delete modal
@@ -692,9 +692,27 @@ function App() {
     setTimeout(() => setSaveStatus(""), 2000);
   };
 
-  // Handle click vào cell trong bảng dữ liệu - không làm gì
+  // Handle click vào cell lẻ - highlight từng ô (độc lập, không mất ô cũ)
   const handleCellClick = (tableIndex, rowIndex, colIndex) => {
-    // Không làm gì - chỉ double click mới highlight hàng
+    setHighlightedCells((prev) => {
+      const currentTable = prev[tableIndex] || {};
+      const currentRow = currentTable[rowIndex] || {};
+
+      const newRow = { ...currentRow };
+      if (newRow[colIndex]) {
+        delete newRow[colIndex];
+      } else {
+        newRow[colIndex] = true;
+      }
+
+      return {
+        ...prev,
+        [tableIndex]: {
+          ...currentTable,
+          [rowIndex]: newRow,
+        },
+      };
+    });
   };
 
   // Handle click vào cột T (Thông số) - highlight cả cột T
@@ -713,27 +731,30 @@ function App() {
     });
   };
 
-  // Handle double click vào cell - bôi xanh cả hàng
+  // Handle double click vào cell - bôi xanh cả hàng (Độc lập từng bảng)
   const handleCellDoubleClick = (tableIndex, rowIndex, colIndex) => {
     setHighlightedRows((prev) => {
-      const newState = { ...prev };
-      if (!newState[tableIndex]) newState[tableIndex] = {};
+      const currentTableRows = prev[tableIndex] || {};
+      const newTableRows = { ...currentTableRows };
 
-      // Toggle highlight row
-      if (newState[tableIndex][rowIndex]) {
-        delete newState[tableIndex][rowIndex];
+      if (newTableRows[rowIndex]) {
+        delete newTableRows[rowIndex];
       } else {
-        newState[tableIndex][rowIndex] = true;
+        newTableRows[rowIndex] = true;
       }
 
-      return newState;
+      return {
+        ...prev,
+        [tableIndex]: newTableRows,
+      };
     });
   };
 
-  // Clear tất cả highlight (cột T và hàng) - KHÔNG xóa màu đỏ/tím của cells
+  // Clear tất cả highlight
   const clearColumnHighlights = () => {
-    setHighlightedTColumns({}); // Xóa highlight cột T
-    setHighlightedRows({}); // Xóa highlight hàng
+    setHighlightedTColumns({});
+    setHighlightedRows({});
+    setHighlightedCells({});
   };
 
   // Navigate to input page
@@ -1775,35 +1796,38 @@ function App() {
                                   disabled={tableIndex >= 2}
                                 />
                               </td>
-                              {row.map((cell, colIndex) => {
-                                const isRowHighlighted =
-                                  highlightedRows[tableIndex]?.[rowIndex];
-
-                                return (
-                                  <td
-                                    key={colIndex}
-                                    className={`data-cell ${cell.color} ${
-                                      isRowHighlighted ? "highlighted-row" : ""
-                                    }`}
-                                    onClick={() =>
-                                      handleCellClick(
-                                        tableIndex,
-                                        rowIndex,
-                                        colIndex,
-                                      )
-                                    }
-                                    onDoubleClick={() =>
-                                      handleCellDoubleClick(
-                                        tableIndex,
-                                        rowIndex,
-                                        colIndex,
-                                      )
-                                    }
-                                  >
-                                    {cell.value}
-                                  </td>
-                                );
-                              })}
+                              {row.map((cell, colIndex) => (
+                                <td
+                                  key={colIndex}
+                                  className={`data-cell ${cell.color} ${
+                                    highlightedRows[tableIndex]?.[rowIndex]
+                                      ? "highlighted-row"
+                                      : ""
+                                  } ${
+                                    highlightedCells[tableIndex]?.[rowIndex]?.[
+                                      colIndex
+                                    ]
+                                      ? "highlighted-cell"
+                                      : ""
+                                  }`}
+                                  onClick={() =>
+                                    handleCellClick(
+                                      tableIndex,
+                                      rowIndex,
+                                      colIndex,
+                                    )
+                                  }
+                                  onDoubleClick={() =>
+                                    handleCellDoubleClick(
+                                      tableIndex,
+                                      rowIndex,
+                                      colIndex,
+                                    )
+                                  }
+                                >
+                                  {cell.value}
+                                </td>
+                              ))}
                             </tr>
                           );
                         });

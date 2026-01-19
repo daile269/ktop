@@ -440,13 +440,13 @@ body {
 
 /* Highlight cột - CHỈ border và overlay xanh nhạt, GIỮ màu gốc */
 .data-cell.highlighted-column {
-  border: 2px solid #0ea5e9 !important;
+  border: 2px solid #2563eb !important;
   box-shadow: inset 0 0 0 2000px rgba(14, 165, 233, 0.15) !important; /* Overlay xanh nhạt */
 }
 
 /* Override cho fixed cells khi highlight */
 .data-cell.fixed.highlighted-column {
-  border: 2px solid #0ea5e9 !important;
+  border: 2px solid #2563eb !important;
   box-shadow: inset 0 0 0 2000px rgba(14, 165, 233, 0.15) !important;
 }
 
