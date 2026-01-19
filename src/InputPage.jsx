@@ -15,7 +15,7 @@ function InputPage() {
       .map(() => ({
         t1Values: Array(ROWS).fill(""),
         t2Values: Array(ROWS).fill(""),
-      }))
+      })),
   );
 
   const [dateValues, setDateValues] = useState(Array(ROWS).fill(""));
@@ -139,7 +139,7 @@ function InputPage() {
           // Scroll đến dòng này (+2 vì có 2 header rows)
           const targetRowNumber = displayRowNumber + 2;
           const rowElement = document.querySelector(
-            `tbody tr:nth-child(${displayRowNumber - 1})` // +1 để scroll xuống thêm 1 dòng
+            `tbody tr:nth-child(${displayRowNumber - 1})`, // +1 để scroll xuống thêm 1 dòng
           );
 
           if (rowElement) {
@@ -161,6 +161,92 @@ function InputPage() {
     }
   }, [isLoading]);
 
+  // Keep last N rows - hide all rows except last N rows with data
+  const handleKeepLastNRows = async () => {
+    const n = parseInt(keepLastNRows);
+
+    if (!n || n <= 0) {
+      alert("⚠️ Vui lòng nhập số dòng hợp lệ (> 0)");
+      return;
+    }
+
+    const nonDeletedRowsWithData = [];
+    for (let i = 0; i < dateValues.length; i++) {
+      if (!deletedRows[i]) {
+        let hasData =
+          dateValues[i] !== "" &&
+          dateValues[i] !== null &&
+          dateValues[i] !== undefined;
+
+        if (!hasData) {
+          for (let qIndex = 0; qIndex < 10; qIndex++) {
+            const t1 = allQData[qIndex]?.t1Values[i];
+            const t2 = allQData[qIndex]?.t2Values[i];
+            if ((t1 && t1 !== "") || (t2 && t2 !== "")) {
+              hasData = true;
+              break;
+            }
+          }
+        }
+
+        if (hasData) {
+          nonDeletedRowsWithData.push(i);
+        }
+      }
+    }
+
+    if (nonDeletedRowsWithData.length === 0) {
+      alert("⚠️ Không có dòng nào có dữ liệu (chưa xóa)!");
+      return;
+    }
+
+    if (
+      !confirm(
+        `⚠️ Bạn có chắc muốn chỉ giữ lại ${n} dòng cuối cùng? Các dòng khác sẽ bị xóa.`,
+      )
+    ) {
+      return;
+    }
+
+    // Keep only last N rows from non-deleted rows
+    const rowsToKeep = nonDeletedRowsWithData.slice(-n);
+
+    // Update deletedRows
+    const newDeletedRows = [...deletedRows];
+    for (let i = 0; i < dateValues.length; i++) {
+      if (!deletedRows[i]) {
+        if (!rowsToKeep.includes(i)) {
+          newDeletedRows[i] = true;
+        }
+      }
+    }
+
+    setDeletedRows(newDeletedRows);
+
+    // Save automatically
+    setSaveStatus("💾 Đang lưu...");
+    const savePromises = [];
+    for (let qIndex = 0; qIndex < 10; qIndex++) {
+      const qId = `q${qIndex + 1}`;
+      savePromises.push(
+        savePageData(
+          qId,
+          allQData[qIndex].t1Values,
+          allQData[qIndex].t2Values,
+          dateValues,
+          newDeletedRows,
+          purpleRangeFrom,
+          purpleRangeTo,
+          n,
+        ),
+      );
+    }
+    await Promise.all(savePromises);
+    setSaveStatus("✅ Đã giữ " + n + " dòng cuối!");
+    alert(`✅ Đã thực hiện giữ lại ${n} dòng cuối cùng!`);
+    setTimeout(() => setSaveStatus(""), 2000);
+  };
+
   // Save data vào 10Q
   const handleSave = async () => {
     setSaveStatus("💾 Đang lưu...");
@@ -179,8 +265,8 @@ function InputPage() {
           deletedRows,
           purpleRangeFrom,
           purpleRangeTo,
-          keepLastNRows
-        )
+          keepLastNRows,
+        ),
       );
     }
 
@@ -220,7 +306,7 @@ function InputPage() {
             fontWeight: "bold",
             fontStyle: "italic",
             margin: "0",
-            color: "#333",
+            color: "#cf3535ff",
           }}
         >
           Dự án cải tạo môi trường thềm lục địa biển Việt Nam -
@@ -228,7 +314,7 @@ function InputPage() {
             style={{
               fontSize: "18px",
               fontWeight: "bold",
-              color: "#333",
+              color: "#cf3535ff",
               fontStyle: "italic",
               marginLeft: "8px",
             }}
@@ -246,7 +332,6 @@ function InputPage() {
               alignItems: "center",
               marginBottom: "20px",
               marginTop: "20px",
-              paddingTop: "20px",
             }}
           >
             {/* <div
@@ -308,6 +393,52 @@ function InputPage() {
                 gap: "10px",
                 alignItems: "center",
                 justifyContent: "center",
+                border: "2px solid #007bff",
+                padding: "10px 15px",
+                borderRadius: "8px",
+                backgroundColor: "#e7f3ff",
+                marginRight: "20px",
+              }}
+            >
+              <label style={{ fontSize: "20px", fontWeight: "bold" }}>
+                📊 Dòng tồn tại:
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={keepLastNRows}
+                onChange={(e) =>
+                  setKeepLastNRows(parseInt(e.target.value) || 1)
+                }
+                style={{
+                  width: "80px",
+                  padding: "6px",
+                  fontSize: "20px",
+                  border: "1px solid #007bff",
+                  borderRadius: "4px",
+                  textAlign: "center",
+                }}
+              />
+              <button
+                className="toolbar-btn"
+                onClick={handleKeepLastNRows}
+                style={{
+                  fontSize: "20px",
+                  background: "#ffc107",
+                  color: "#212529",
+                  border: "none",
+                }}
+              >
+                Áp dụng
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <button
@@ -359,8 +490,8 @@ function InputPage() {
                         colSpan="2"
                         style={{
                           backgroundColor: color,
-                          borderLeft: "3px solid red",
-                          borderRight: "3px solid red",
+                          borderLeft: "2px solid red",
+                          borderRight: "2px solid red",
                         }}
                       >
                         Q{qIndex + 1}
@@ -378,7 +509,7 @@ function InputPage() {
                           key={`t1-${qIndex}`}
                           style={{
                             backgroundColor: color,
-                            borderLeft: "3px solid red",
+                            borderLeft: "2px solid red",
                           }}
                         >
                           T1
@@ -387,7 +518,7 @@ function InputPage() {
                           key={`t2-${qIndex}`}
                           style={{
                             backgroundColor: color,
-                            borderRight: "3px solid red",
+                            borderRight: "2px solid red",
                           }}
                         >
                           T2
@@ -401,7 +532,7 @@ function InputPage() {
                 {(() => {
                   const sortedIndices = Array.from(
                     { length: ROWS },
-                    (_, i) => i
+                    (_, i) => i,
                   ).sort((a, b) => {
                     const aDeleted = deletedRows[a] || false;
                     const bDeleted = deletedRows[b] || false;
@@ -439,7 +570,6 @@ function InputPage() {
                                 key={`t1-${qIndex}`}
                                 style={{
                                   backgroundColor: color,
-                                  borderLeft: "3px solid red",
                                 }}
                               >
                                 <input
@@ -464,7 +594,6 @@ function InputPage() {
                                 key={`t2-${qIndex}`}
                                 style={{
                                   backgroundColor: color,
-                                  borderRight: "3px solid red",
                                 }}
                               >
                                 <input

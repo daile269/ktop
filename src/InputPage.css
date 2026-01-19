@@ -1,26 +1,48 @@
 /* InputPage - Large Font Styles */
 
-/* Sticky header */
+/* Table container */
+.schedule-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Sticky header - Hoạt động trong overflow container */
 .schedule-table thead {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: white;
 }
 
-/* Table headers */
-.schedule-table th {
-  font-size: 30px !important;
-  padding: 12px !important;
+/* Row đầu tiên - Q1, Q2, Q3... */
+.schedule-table thead tr:first-child th {
   position: sticky;
   top: 0;
+  z-index: 12;
+  background: white;
+  font-size: 30px !important;
+  padding: 12px !important;
+  border: 1px solid #ddd;
+}
+
+/* Row thứ hai - T1, T2 */
+.schedule-table thead tr:nth-child(2) th {
+  position: sticky;
+  top: 54px; /* Chiều cao của row đầu */
+  z-index: 11;
+  background: white;
+  font-size: 30px !important;
+  padding: 12px !important;
+  border: 1px solid #ddd;
+  border-bottom: 1px solid #333 !important; /* Border đậm để ngăn cách */
 }
 
 /* Table cells */
 .schedule-table td {
   font-size: 30px !important;
   padding: 8px !important;
-  border: black solid 2px !important;
+  border: black solid 1px !important;
+  background: white;
 }
 
 /* All inputs in table */
