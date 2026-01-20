@@ -425,34 +425,44 @@ body {
   color: #dc2626;
 }
 
-/* Highlight cells và rows */
+/* Highlight cells và rows - Chuyển sang tông VÀNG NHẠT */
 .data-cell.highlighted-cell {
-  border: 3px solid #3b82f6 !important; /* Border xanh đậm */
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); /* Glow effect */
+  border: 4px solid #fdd835 !important; /* Border vàng đậm */
+  background-color: #fffde7 !important; /* Nền vàng nhạt hẳn */
+  box-shadow: 0 0 10px rgba(253, 216, 53, 0.5); /* Hiệu ứng tỏa sáng vàng */
 }
 
-/* Highlight hàng - CHỈ border và overlay xanh nhạt, GIỮ màu gốc */
+/* Highlight hàng */
 .data-cell.highlighted-row {
-  border: 2px solid #2563eb !important; /* Border xanh */
-  box-shadow: inset 0 0 0 2000px rgba(59, 130, 246, 0.15) !important; /* Overlay xanh nhạt */
+  border-top: 2px solid #fbc02d !important;
+  border-bottom: 2px solid #fbc02d !important;
+  box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.4) !important; /* Lớp phủ vàng nhạt */
   font-weight: 600;
 }
 
-/* Highlight cột - CHỈ border và overlay xanh nhạt, GIỮ màu gốc */
+/* Highlight cột */
 .data-cell.highlighted-column {
-  border: 2px solid #2563eb !important;
-  box-shadow: inset 0 0 0 2000px rgba(14, 165, 233, 0.15) !important; /* Overlay xanh nhạt */
+  border-left: 2px solid #fbc02d !important;
+  border-right: 2px solid #fbc02d !important;
+  box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.4) !important; /* Lớp phủ vàng nhạt */
+}
+
+/* Đảm bảo ô thông (input) nổi màu khi được highlight */
+.data-cell.highlighted-column .grid-input,
+.data-cell.highlighted-row .grid-input,
+.data-cell.highlighted-cell .grid-input {
+  background: transparent !important;
 }
 
 /* Override cho fixed cells khi highlight */
 .data-cell.fixed.highlighted-column {
-  border: 2px solid #2563eb !important;
-  box-shadow: inset 0 0 0 2000px rgba(14, 165, 233, 0.15) !important;
+  border: 2px solid #fbc02d !important;
+  box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.4) !important;
 }
 
 .data-cell.fixed.highlighted-row {
-  border: 2px solid #2563eb !important;
-  box-shadow: inset 0 0 0 2000px rgba(59, 130, 246, 0.15) !important;
+  border: 2px solid #fbc02d !important;
+  box-shadow: inset 0 0 0 2000px rgba(255, 241, 118, 0.4) !important;
 }
 
 /* XÓA tất cả các rule thay đổi background cũ */
