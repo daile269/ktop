@@ -14,13 +14,13 @@ function App() {
   const [t2, setT2] = useState("");
   const [t3, setT3] = useState("");
 
-  const TOTAL_TABLES = 60;
+  const TOTAL_TABLES = 15;
   const ROWS = 366; // Tăng từ 150 lên 300 dòng
 
   // Lấy pageId từ URL (vd: /q1 -> pageId = 'q1')
   const pageId = pathname || "q1"; // Default là 'q1'
 
-  // State cho tất cả 60 bảng
+  // State cho tất cả 15 bảng
   const [allTableData, setAllTableData] = useState(
     Array(TOTAL_TABLES)
       .fill(null)
@@ -144,7 +144,10 @@ function App() {
     // Tìm hàng dưới cùng (hàng mới nhất có dữ liệu)
     let lastRowIndex = -1;
     for (let i = dateValues.length - 1; i >= 0; i--) {
-      if (!deletedRows[i] && dateValues[i]) {
+      if (
+        !deletedRows[i] &&
+        (dateValues[i] || allTValues[0][i] || allTValues[1][i])
+      ) {
         lastRowIndex = i;
         break;
       }
@@ -308,12 +311,12 @@ function App() {
     loadData();
   }, [pageId]);
 
-  // Auto-regenerate bảng khi dateValues hoặc purple range thay đổi
+  // Auto-regenerate bảng khi dateValues, allTValues hoặc purple range thay đổi
   useEffect(() => {
     if (isDataLoaded) {
       generateTableWithValues(allTValues);
     }
-  }, [dateValues, purpleRangeFrom, purpleRangeTo]);
+  }, [dateValues, allTValues, purpleRangeFrom, purpleRangeTo]);
 
   // Auto scroll to bottom khi mở ứng dụng
   useEffect(() => {
@@ -366,61 +369,72 @@ function App() {
             // Tìm hàng dưới cùng (hàng mới nhất có dữ liệu)
             let lastRowIndex = -1;
             for (let rowIdx = dateValues.length - 1; rowIdx >= 0; rowIdx--) {
-              if (!deletedRows[rowIdx] && dateValues[rowIdx]) {
+              if (
+                !deletedRows[rowIdx] &&
+                (dateValues[rowIdx] ||
+                  (t1Values && t1Values[rowIdx]) ||
+                  (t2Values && t2Values[rowIdx]))
+              ) {
                 lastRowIndex = rowIdx;
                 break;
               }
             }
 
-            // Kiểm tra xem hàng dưới cùng có ô purple không
-            let hasLastRowPurple = false;
-            if (lastRowIndex !== -1 && t1Values && t2Values) {
-              // Tính y counter cho từng cột ở hàng dưới cùng
-              for (let col = 0; col < 10; col++) {
-                let y = 1;
-
-                // Tính y từ đầu đến hàng cuối
-                for (let row = 0; row <= lastRowIndex; row++) {
-                  if (deletedRows[row]) continue;
-
-                  const currentY = y;
-
-                  // Lấy giá trị T của hàng này
-                  const tValue = (col < 5 ? t1Values : t2Values)?.[row];
-                  const tCol = tValue ? parseInt(tValue) : -1;
-
-                  // Nếu đây là hàng cuối, kiểm tra y có trong purple range không
-                  if (row === lastRowIndex) {
-                    if (
-                      currentY >= purpleFrom &&
-                      currentY <= purpleTo &&
-                      col !== tCol
-                    ) {
-                      hasLastRowPurple = true;
-                      break;
-                    }
-                  }
-
-                  // Tăng y
-                  y++;
-
-                  // Reset y nếu gặp ô đỏ
-                  if (col === tCol && tCol !== -1) {
-                    y = 1;
-                  }
+            if (lastRowIndex !== -1) {
+              // Tính toán tất cả các cột T (T1 -> T15)
+              const qAllTValues = [t1Values || [], t2Values || []];
+              for (let tIdx = 2; tIdx < 15; tIdx++) {
+                const tVals = Array(dateValues.length).fill("");
+                const prevPrev = qAllTValues[tIdx - 2];
+                const prev = qAllTValues[tIdx - 1];
+                for (let r = 0; r <= lastRowIndex; r++) {
+                  const n1 = parseInt(prevPrev?.[r]) || 0;
+                  const n2 = parseInt(prev?.[r]) || 0;
+                  tVals[r] = String((n1 + n2) % 10);
                 }
-
-                if (hasLastRowPurple) break;
+                qAllTValues.push(tVals);
               }
-            }
 
-            if (hasLastRowPurple) {
-              info[qId] = {
-                hasPurple: true,
-                from: purpleFrom,
-                to: purpleTo,
-                range: `${from}-${to}`,
-              };
+              // Kiểm tra xem CÓ BẤT KỲ ô nào ở hàng cuối của BẤT KỲ bảng nào bị báo màu không
+              let hasAnyPurple = false;
+
+              for (let tIdx = 0; tIdx < 15; tIdx++) {
+                const currentT = qAllTValues[tIdx];
+
+                // Duyệt qua 10 cột của bảng này
+                for (let col = 0; col < 10; col++) {
+                  let y = 1;
+                  // Tính y từ đầu đến hàng cuối cho cột col
+                  for (let r = 0; r <= lastRowIndex; r++) {
+                    if (deletedRows[r]) continue;
+
+                    const tVal = currentT[r] ? parseInt(currentT[r]) : -1;
+                    const isRed = tVal === col && tVal !== -1;
+
+                    if (r === lastRowIndex) {
+                      const isPurple = y >= purpleFrom && y <= purpleTo;
+                      if (isPurple) {
+                        hasAnyPurple = true;
+                        break;
+                      }
+                    }
+
+                    if (isRed) y = 1;
+                    else y++;
+                  }
+                  if (hasAnyPurple) break;
+                }
+                if (hasAnyPurple) break;
+              }
+
+              if (hasAnyPurple) {
+                info[qId] = {
+                  hasPurple: true,
+                  from: purpleFrom,
+                  to: purpleTo,
+                  range: `${from}-${to}`,
+                };
+              }
             }
           }
         }
@@ -429,9 +443,28 @@ function App() {
       setQPurpleInfo(info);
     };
 
-    // Load khi component mount và khi purpleRange của Q hiện tại thay đổi
     loadAllQPurpleInfo();
-  }, [purpleRangeFrom, purpleRangeTo, pageId]);
+  }, [purpleRangeFrom, purpleRangeTo]); // Loại bỏ pageId để tránh reload liên tục, sẽ xử lý Q hiện tại riêng
+
+  // Cập nhật qPurpleInfo cho Q hiện tại dựa trên local state
+  useEffect(() => {
+    if (isDataLoaded) {
+      const currentPurpleCells = getPurpleCellsInfo();
+      const hasPurple = Object.keys(currentPurpleCells).length > 0;
+
+      setQPurpleInfo((prev) => ({
+        ...prev,
+        [pageId]: hasPurple
+          ? {
+              hasPurple: true,
+              from: purpleRangeFrom,
+              to: purpleRangeTo,
+              range: `${purpleRangeFrom}-${purpleRangeTo}`,
+            }
+          : null,
+      }));
+    }
+  }, [allTableData, pageId]);
 
   // Thuật toán sinh bảng (dùng chung cho cả 2 toa)
   const generateTableData = (tValues, toaName) => {
@@ -1357,7 +1390,7 @@ function App() {
             fontWeight: "bold",
             fontStyle: "italic",
             margin: "0",
-            color: "#333",
+            color: "#cf3535ff",
           }}
         >
           Dự án cải tạo môi trường thềm lục địa biển Việt Nam -
@@ -1365,7 +1398,7 @@ function App() {
             style={{
               fontSize: "18px",
               fontWeight: "bold",
-              color: "#333",
+              color: "#cf3535ff",
               fontStyle: "italic",
               marginLeft: "8px",
             }}
@@ -1534,16 +1567,16 @@ function App() {
               const isViewed = viewedQs[qId];
 
               // Xác định màu background
-              let bgColor = "transparent"; // Mặc định: trắng (không báo màu)
+              let bgColor = "#ffffff"; // Mặc định: trắng (không báo màu)
               if (hasPurple && !isViewed) {
                 bgColor = "#ff9800"; // cam: có báo màu mới (chưa xem)
               } else if (hasPurple && isViewed) {
-                bgColor = "#f8c507bd"; // vàng: báo màu đã xem
+                bgColor = "#ffeb3b"; // vàng: báo màu đã xem
               }
 
-              // Nếu đang active, ưu tiên màu xanh
+              // Nếu đang active (đang xem), ưu tiên màu xanh
               if (isActive) {
-                bgColor = "#4a90e2";
+                bgColor = "#4a90e2"; // màu xanh lá
               }
 
               return (
@@ -1555,20 +1588,25 @@ function App() {
                   className="toolbar-button"
                   style={{
                     backgroundColor: bgColor,
-                    color: isActive ? "white" : hasPurple ? "#333" : "#555",
+                    color: isActive ? "white" : "#333",
                     fontWeight: isActive || hasPurple ? "bold" : "normal",
                     border: isActive
-                      ? "2px solid #357abd"
+                      ? "3px solid #4a90e2"
                       : "1px solid #d0d0d0",
                     padding: "6px 12px",
                     fontSize: "30px",
-                    minWidth: "50px",
+                    minWidth: "60px",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    boxShadow: isActive
+                      ? "0 0 10px rgba(40, 167, 69, 0.5)"
+                      : "none",
                   }}
                   title={
                     hasPurple
                       ? isViewed
                         ? `Đã xem - Báo màu: ${range}`
-                        : `Mới - Báo màu: ${range}`
+                        : `MỚI - Báo màu: ${range}`
                       : `Chuyển đến Q${num}`
                   }
                 >
