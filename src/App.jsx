@@ -38,10 +38,9 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false); // Loading khi tính toán
   const [error, setError] = useState("");
 
-  // State cho highlight cells, rows và T-columns
-  const [highlightedRows, setHighlightedRows] = useState({}); // {tableIndex: {rowIndex: true}} - Highlight độc lập từng bảng
+  // State cho highlight cells và T-columns
   const [highlightedCells, setHighlightedCells] = useState({}); // {tableIndex: {rowIndex: {colIndex: true}}} - Highlight từng ô lẻ
-  const [highlightedTColumns, setHighlightedTColumns] = useState({}); // {tableIndex: true} - Highlight cột T (Thông số)
+  const [highlightedTCells, setHighlightedTCells] = useState({}); // {tableIndex: {rowIndex: true}} - Highlight từng ô T lẻ
 
   // State cho delete modal
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -299,6 +298,7 @@ function App() {
         } else {
           // Không có dữ liệu - đây là Q mới
           console.log(`Không có dữ liệu cho ${pageId}`);
+          setIsDataLoaded(true); // Đánh dấu đã load xong (dù rỗng) để cho phép gen bảng khi nhập mới
         }
       } catch (error) {
         console.error("Lỗi khi load từ Firestore:", error);
@@ -316,9 +316,9 @@ function App() {
     if (isDataLoaded) {
       generateTableWithValues(allTValues);
     }
-  }, [dateValues, allTValues, purpleRangeFrom, purpleRangeTo]);
+  }, [dateValues, allTValues, purpleRangeFrom, purpleRangeTo, isDataLoaded]);
 
-  // Auto scroll to bottom khi mở ứng dụng
+  // Auto scroll to bottom khi mới load xong hoặc chuyển Q
   useEffect(() => {
     if (isDataLoaded && allTableData.length > 0) {
       // Delay nhỏ để đảm bảo DOM đã render xong
@@ -329,9 +329,9 @@ function App() {
             ref.scrollTop = ref.scrollHeight;
           }
         });
-      }, 100);
+      }, 150);
     }
-  }, [isDataLoaded, allTableData]);
+  }, [isDataLoaded, pageId]); // Chỉ chạy khi mới load xong hoặc đổi trang Q1-Q10
 
   // Đánh dấu Q hiện tại là đã xem khi có báo màu
   useEffect(() => {
@@ -748,45 +748,28 @@ function App() {
     });
   };
 
-  // Handle click vào cột T (Thông số) - highlight cả cột T
-  const handleTColumnClick = (tableIndex) => {
-    setHighlightedTColumns((prev) => {
-      const newState = { ...prev };
+  // Handle click vào ô T (Thông số) - highlight từng ô T (màu cam)
+  const handleTCellClick = (tableIndex, rowIndex) => {
+    setHighlightedTCells((prev) => {
+      const currentTable = prev[tableIndex] || {};
+      const newTable = { ...currentTable };
 
-      // Toggle highlight T column
-      if (newState[tableIndex]) {
-        delete newState[tableIndex];
+      if (newTable[rowIndex]) {
+        delete newTable[rowIndex];
       } else {
-        newState[tableIndex] = true;
-      }
-
-      return newState;
-    });
-  };
-
-  // Handle double click vào cell - bôi xanh cả hàng (Độc lập từng bảng)
-  const handleCellDoubleClick = (tableIndex, rowIndex, colIndex) => {
-    setHighlightedRows((prev) => {
-      const currentTableRows = prev[tableIndex] || {};
-      const newTableRows = { ...currentTableRows };
-
-      if (newTableRows[rowIndex]) {
-        delete newTableRows[rowIndex];
-      } else {
-        newTableRows[rowIndex] = true;
+        newTable[rowIndex] = true;
       }
 
       return {
         ...prev,
-        [tableIndex]: newTableRows,
+        [tableIndex]: newTable,
       };
     });
   };
 
   // Clear tất cả highlight
   const clearColumnHighlights = () => {
-    setHighlightedTColumns({});
-    setHighlightedRows({});
+    setHighlightedTCells({});
     setHighlightedCells({});
   };
 
@@ -1803,21 +1786,12 @@ function App() {
                               </td>
                               <td
                                 className={`data-cell fixed value-col ${
-                                  highlightedTColumns[tableIndex]
-                                    ? "highlighted-column"
-                                    : ""
-                                } ${
-                                  highlightedRows[tableIndex]?.[rowIndex]
-                                    ? "highlighted-row"
+                                  highlightedTCells[tableIndex]?.[rowIndex]
+                                    ? "highlighted-t-cell"
                                     : ""
                                 }`}
-                                onClick={() => handleTColumnClick(tableIndex)}
-                                onDoubleClick={() =>
-                                  handleCellDoubleClick(
-                                    tableIndex,
-                                    rowIndex,
-                                    -1,
-                                  )
+                                onClick={() =>
+                                  handleTCellClick(tableIndex, rowIndex)
                                 }
                               >
                                 <input
@@ -1838,10 +1812,6 @@ function App() {
                                 <td
                                   key={colIndex}
                                   className={`data-cell ${cell.color} ${
-                                    highlightedRows[tableIndex]?.[rowIndex]
-                                      ? "highlighted-row"
-                                      : ""
-                                  } ${
                                     highlightedCells[tableIndex]?.[rowIndex]?.[
                                       colIndex
                                     ]
@@ -1850,13 +1820,6 @@ function App() {
                                   }`}
                                   onClick={() =>
                                     handleCellClick(
-                                      tableIndex,
-                                      rowIndex,
-                                      colIndex,
-                                    )
-                                  }
-                                  onDoubleClick={() =>
-                                    handleCellDoubleClick(
                                       tableIndex,
                                       rowIndex,
                                       colIndex,
