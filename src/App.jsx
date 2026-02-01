@@ -71,7 +71,7 @@ function App() {
   // State cho settings modal
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  // State cho keep last N rows confirmation modal
+  // State cho keep last N rows confirmation modall
   const [showKeepLastNRowsModal, setShowKeepLastNRowsModal] = useState(false);
 
   // State cho delete confirmation modals
